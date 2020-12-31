@@ -7,11 +7,12 @@
   "private": true,
   "scripts": {
     "start": "elm-app start",
-    "start:no-debug": "bash -c \"ELM_DEBUGGER=false elm-app start\"",
-    "start:build": "serve build",
     "build": "elm-app build",
     "lint": "elm-format --validate ./src",
-    "test": "elm-app test"
+    "test": "elm-app test",
+    "start:no-debug": "bash -c \"ELM_DEBUGGER=false elm-app start\"",
+    "serve": "serve build",
+    "serve:build": "bash -c \"yarn build && yarn serve\""
   },
   "devDependencies": {
     "create-elm-app": "^5.22.0",
