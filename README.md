@@ -6,7 +6,9 @@ This is Evan Rosson's extra-fancy `create-elm-app` template. `create-elm-app` is
 * URL routing, with a distinct Elm architecture - `Model`, `Msg`, `update`, `subscriptions`, and `view` - for each page
 * A `/debug` url, where the developer can add debugging info and features
 * A session - "global" data passed among all pages of your app
-* Github continuous integration ![CI](https://github.com/erosson/elm-application-template/workflows/CI/badge.svg)
+* Github continuous integration:
+  * pull requests: build and test ![continuous-integration](https://github.com/erosson/elm-application-template/workflows/continuous-integration/badge.svg)
+  * main branch pushes: build, test, and deploy to Netlify ![continuous-deployment](https://github.com/erosson/elm-application-template/workflows/continuous-deployment/badge.svg)
 
 These patterns are based on [rtfeldman/elm-spa-example](https://github.com/rtfeldman/elm-spa-example), plus my own experiences.
 

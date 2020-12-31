@@ -11,7 +11,7 @@
     "lint": "elm-format --validate ./src",
     "test": "elm-app test",
     "start:no-debug": "bash -c \"ELM_DEBUGGER=false elm-app start\"",
-    "serve": "serve build",
+    "serve": "serve -s build",
     "serve:build": "bash -c \"yarn build && yarn serve\""
   },
   "devDependencies": {
