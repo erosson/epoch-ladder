@@ -23,7 +23,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NETLIFY_CMD: yarn install --frozen-lockfile && yarn build
-          NETLIFY_DIR: ./build/
+          NETLIFY_DIR: build/
       # thanks, https://github.com/calitb/VueJS-Sample/blob/master/.github/workflows/deploy_staging.yml
       - name: Netlify Preview URL
         uses: unsplash/comment-on-pr@master
