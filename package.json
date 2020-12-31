@@ -1,18 +1,21 @@
 {
   "name": "elm-application-template",
-  "description": "`git clone` this repository for a new Elm Browser.application, including session, page, and route boilerplate"
+  "description": "`git clone` this repository for a new Elm Browser.application, including session, page, and route boilerplate",
   "version": "1.0.0",
   "main": "src/index.js",
   "repository": "https://github.com/erosson/elm-application-template",
-  "author": "Evan Rosson <git@erosson.org>",
-  "license": "MIT",
   "private": true,
   "scripts": {
     "start": "elm-app start",
+    "start:no-debug": "bash -c \"ELM_DEBUGGER=false elm-app start\"",
+    "start:build": "serve build",
     "build": "elm-app build",
+    "lint": "elm-format --validate ./src",
     "test": "elm-app test"
   },
   "devDependencies": {
-    "create-elm-app": "^5.22.0"
+    "create-elm-app": "^5.22.0",
+    "elm-format": "^0.8.4",
+    "serve": "^11.3.2"
   }
 }

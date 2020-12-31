@@ -40,7 +40,8 @@ subscriptions model =
 view : Model -> List (Html Msg)
 view model =
     [ h1 [] [ text "Debug info" ]
-    , div [] [ text <| Debug.toString model.session ]
+
+    -- , div [] [ text <| Debug.toString model.session ]
     , div [] [ text "..." ]
     , div [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
     ]

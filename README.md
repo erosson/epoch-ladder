@@ -1,13 +1,14 @@
 # elm-application-template
 
-This is Evan Rosson's extra-fancy create-elm-app template. create-elm-app is a great start; it's done most of the hard work! This template adds some additional boilerplate I repeat in every substantial Elm app:
+This is Evan Rosson's extra-fancy `create-elm-app` template. `create-elm-app` is a great start! This template adds some additional boilerplate I tend to repeat in most Elm apps:
 
-* package.json with simple elm-app scripts
-* URL routing, with a distinct Elm architecture - Model, Msg, update, subscriptions, and view - for each page
-* A /debug page, where the developer can add debugging info and features
+* a `package.json` with simple `elm-app`-based scripts
+* URL routing, with a distinct Elm architecture - `Model`, `Msg`, `update`, `subscriptions`, and `view` - for each page
+* A `/debug` url, where the developer can add debugging info and features
 * A session - "global" data passed among all pages of your app
+* Github continuous integration
 
-Much of this is based on patterns from [rtfeldman/elm-spa-example](https://github.com/rtfeldman/elm-spa-example), plus my own experiences.
+These patterns are based on [rtfeldman/elm-spa-example](https://github.com/rtfeldman/elm-spa-example), plus my own experiences.
 
 This boilerplate's not appropriate for every app. It's pretty bad for apps with just one route, and it doesn't always make sense for each page to have its own full Elm architecture. It usually works well for me, though!
 
