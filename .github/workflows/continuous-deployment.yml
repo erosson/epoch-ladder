@@ -14,13 +14,18 @@ jobs:
       - run: yarn test
       - run: yarn build
       - run: yarn lint
-      # Deploy this site to Netlify. This will fail if you don't have the netlify app installed -
-      # either install it (see the CI failure message for a url) or comment this out if you don't want automatic deployment.
-      - name: Deploy to Netlify
+      # Deploy this site to Netlify. NETLIFY_AUTH_TOKEN is required in your repository secrets; see:
+      # * netlify's github-action docs: https://github.com/netlify/actions/tree/master/cli
+      # * netlify's token docs: https://docs.netlify.com/cli/get-started/#obtain-a-token-in-the-netlify-ui
+      # * netlify keygen ui: https://app.netlify.com/user/applications/personal
+      # * github's add-secret ui: repository settings > secrets > new
+      #     that is, https://github.com/<USER>/<REPO>/settings/secrets/actions/new
+      - if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
+        name: Deploy to Netlify
         id: deploy-netlify
         uses: netlify/actions/cli@master
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
         with:
           args: deploy --dir=build
       - run: echo "${{ steps.deploy-netlify.outputs.NETLIFY_URL }}"
