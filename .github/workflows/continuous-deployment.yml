@@ -23,3 +23,4 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NETLIFY_CMD: yarn install --frozen-lockfile && yarn build
           NETLIFY_DIR: ./build/
+      - run: echo "${{ steps.deploy-netlify.outputs.NETLIFY_URL }}"
