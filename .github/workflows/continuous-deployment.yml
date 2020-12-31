@@ -14,17 +14,13 @@ jobs:
       - run: yarn test
       - run: yarn build
       - run: yarn lint
-      # Deploy this site to Netlify. NETLIFY_AUTH_TOKEN is required in your repository secrets; see:
-      # * netlify's github-action docs: https://github.com/netlify/actions/tree/master/cli
-      # * netlify's token docs: https://docs.netlify.com/cli/get-started/#obtain-a-token-in-the-netlify-ui
-      # * netlify keygen ui: https://app.netlify.com/user/applications/personal
-      # * github's add-secret ui: repository settings > secrets > new
-      #     that is, https://github.com/<USER>/<REPO>/settings/secrets/actions/new
+      # Create and deploy a Netlify site on push, or a preview on pull-request.
+      # https://github.com/netlify/actions/tree/master/build
+      # You'll need to add this repo to netlify's github application for this to work: https://github.com/settings/installations
       - name: Deploy to Netlify
         id: deploy-netlify
-        uses: netlify/actions/cli@master
+        uses: netlify/actions/build@master
         env:
-          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
-        with:
-          args: deploy --dir=build
-      - run: echo "${{ steps.deploy-netlify.outputs.NETLIFY_URL }}"
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NETLIFY_CMD: yarn install --frozen-lockfile && yarn build
+          NETLIFY_DIR: build
