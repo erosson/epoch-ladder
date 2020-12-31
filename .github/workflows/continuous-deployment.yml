@@ -18,9 +18,9 @@ jobs:
       # either install it (see the CI failure message for a url) or comment this out if you don't want automatic deployment.
       - name: Deploy to Netlify
         id: deploy-netlify
-        uses: netlify/actions/build@master
+        uses: netlify/actions/cli@master
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NETLIFY_CMD: yarn install --frozen-lockfile && yarn build
-          NETLIFY_DIR: ./build/
+        with:
+          args: deploy --dir=build
       - run: echo "${{ steps.deploy-netlify.outputs.NETLIFY_URL }}"
