@@ -20,8 +20,7 @@ jobs:
       # * netlify keygen ui: https://app.netlify.com/user/applications/personal
       # * github's add-secret ui: repository settings > secrets > new
       #     that is, https://github.com/<USER>/<REPO>/settings/secrets/actions/new
-      - if: ${{ secrets.NETLIFY_AUTH_TOKEN != '' }}
-        name: Deploy to Netlify
+      - name: Deploy to Netlify
         id: deploy-netlify
         uses: netlify/actions/cli@master
         env:
