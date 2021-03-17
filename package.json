@@ -1,9 +1,9 @@
 {
-  "name": "metapoch",
+  "name": "epoch-ladder",
   "description": "",
   "version": "1.0.0",
   "main": "src/index.js",
-  "repository": "https://github.com/erosson/elm-application-template",
+  "repository": "https://github.com/erosson/epoch-ladder",
   "private": true,
   "scripts": {
     "start": "elm-app start",
