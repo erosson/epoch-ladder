@@ -4,11 +4,12 @@ import Browser.Navigation as Nav
 import Html as H
 import Html.Attributes as A
 import Url exposing (Url)
-import Url.Parser as P exposing (Parser)
+import Url.Parser as P exposing ((</>), Parser)
 
 
 type Route
     = Home
+    | Leaderboard String
     | Debug
 
 
@@ -21,6 +22,7 @@ parser : Parser (Route -> a) a
 parser =
     P.oneOf
         [ P.map Home P.top
+        , P.map Leaderboard <| P.s "leader-board" </> P.string
         , P.map Debug <| P.s "debug"
         ]
 
@@ -30,6 +32,9 @@ toString route =
     case route of
         Home ->
             "/"
+
+        Leaderboard code ->
+            "/leader-board/" ++ code
 
         Debug ->
             "/debug"
