@@ -1,37 +1,55 @@
 module Session exposing
     ( Ability
     , Entry
-    , LeaderboardRequest
+    , Leaderboard
     , Msg(..)
     , Session
-    , classesList
-    , defaultLeaderboardReq
     , fetchLeaderboard
     , init
-    , subclasses
+    , toLeaderboard
     , toLeaderboardCode
     , update
     )
 
 import Browser.Navigation as Nav
 import Dict exposing (Dict)
+import Dict.Extra
+import Game.Class exposing (Class)
+import Game.Subclass exposing (Subclass)
 import Http
 import Json.Decode as D
+import List.Extra
 import RemoteData exposing (RemoteData)
+import Route exposing (HomeQuery, homeQuery)
+import Set exposing (Set)
+import Util
 
 
 type alias Session =
+    { leaderboard : RemoteData Http.Error Leaderboard
+
     -- Nav.Key cannot be unit tested; Maybe Nav.Key is a workaround.
     -- See https://github.com/elm-explorations/test/issues/24
-    { leaderboard : RemoteData Http.Error (List Entry)
     , nav : Maybe Nav.Key
+    }
+
+
+type alias Leaderboard =
+    { list : List Entry
+    , rawList : List Entry
+    , rankedList : List ( Int, Entry )
+    , size : Int
+    , rawSize : Int
+    , subclasses : List ( Result String Subclass, Int )
+    , classes : List ( Result String Class, Int )
+    , abilities : List ( ( Ability, Result String Subclass ), Int )
     }
 
 
 type alias Entry =
     { playerUsername : String
     , charName : String
-    , charClass : String
+    , charClass : Result String Subclass
     , charLvl : Int
     , maxWave : Int
     , abilities : List Ability
@@ -42,21 +60,8 @@ type alias Ability =
     { name : String, imagePath : Maybe String }
 
 
-type alias LeaderboardRequest r =
-    { r
-        | version : Maybe String
-        , ssf : Bool
-        , hc : Bool
-        , class : Maybe String
-    }
-
-
-defaultLeaderboardReq =
-    { version = Nothing, ssf = False, hc = False, class = Nothing }
-
-
 type Msg
-    = HttpGetLeaderBoard (Result Http.Error (List Entry))
+    = HttpGetLeaderBoard HomeQuery (Result Http.Error (List Entry))
 
 
 init : Maybe Nav.Key -> Session
@@ -67,66 +72,97 @@ init =
 update : Msg -> Session -> Session
 update msg session =
     case msg of
-        HttpGetLeaderBoard res ->
-            { session | leaderboard = res |> RemoteData.fromResult }
+        HttpGetLeaderBoard filter res ->
+            { session | leaderboard = res |> Result.map (toLeaderboard filter) |> RemoteData.fromResult }
 
 
-toLeaderboardCode : LeaderboardRequest r -> String
+toLeaderboard : HomeQuery -> List Entry -> Leaderboard
+toLeaderboard filter list =
+    let
+        popularity : (a -> comparable) -> List a -> List a -> List ( a, Int )
+        popularity toKey all votes =
+            let
+                counts =
+                    votes
+                        |> List.Extra.gatherEquals
+                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
+                        |> List.sortBy Tuple.second
+                        |> List.reverse
+
+                counted : Set comparable
+                counted =
+                    counts |> List.map (Tuple.first >> toKey) |> Set.fromList
+
+                uncounted =
+                    all |> List.filter (\e -> Set.member (toKey e) counted |> not)
+            in
+            counts ++ List.map (\e -> ( e, 0 )) uncounted
+
+        rankedList =
+            list |> List.indexedMap Tuple.pair
+
+        filteredList =
+            rankedList
+                |> List.filter
+                    (Tuple.second
+                        >> (\entry ->
+                                List.all identity
+                                    [ filter.subclass == Nothing || filter.subclass == Just (Util.unwrapResult identity .name entry.charClass)
+                                    ]
+                           )
+                    )
+    in
+    { list = filteredList |> List.map Tuple.second
+    , rankedList = filteredList
+    , rawList = list
+    , size = List.length filteredList
+    , rawSize = List.length list
+    , subclasses =
+        list
+            |> List.map .charClass
+            |> popularity (Util.unwrapResult identity .name)
+                (Game.Subclass.list
+                    |> List.filter (\s -> filter.class == Nothing || filter.class == Just s.class.name)
+                    |> List.map Ok
+                )
+    , classes =
+        list
+            |> List.map (.charClass >> Result.map .class)
+            |> popularity (Util.unwrapResult identity .name)
+                (Game.Class.list
+                    |> List.filter (\c -> filter.class == Nothing || Just c.name == filter.class)
+                    |> List.map Ok
+                )
+    , abilities =
+        list
+            |> List.concatMap (\e -> e.abilities |> List.map (\a -> ( a, e.charClass )))
+            |> popularity (Tuple.first >> .name) []
+    }
+
+
+toLeaderboardCode : HomeQuery -> String
 toLeaderboardCode req =
     [ req.version |> Maybe.withDefault "beta081"
-    , ifthen req.ssf "ssf" ""
-    , ifthen req.hc "hardcore" "softcore"
+    , Util.ifthen req.ssf "ssf" ""
+    , Util.ifthen req.hc "hardcore" "softcore"
     , req.class |> Maybe.withDefault "allclass" |> String.toLower
     , "arenawave"
     ]
         |> String.join ""
 
 
-ifthen : Bool -> a -> a -> a
-ifthen pred t f =
-    -- `elm-format`-friendly compact branching
-    if pred then
-        t
-
-    else
-        f
-
-
-fetchLeaderboard : LeaderboardRequest r -> Session -> ( Session, Cmd Msg )
+fetchLeaderboard : HomeQuery -> Session -> ( Session, Cmd Msg )
 fetchLeaderboard req session =
     ( { session | leaderboard = RemoteData.Loading }
     , Http.get
         { url = "https://leapi.lastepoch.com/api/leader-board?code=" ++ toLeaderboardCode req
-        , expect = Http.expectJson HttpGetLeaderBoard decoder
+        , expect = Http.expectJson (HttpGetLeaderBoard { homeQuery | class = req.class }) leaderboardResultDecoder
         }
     )
 
 
-subclassesList : List ( String, List String )
-subclassesList =
-    -- https://www.lastepoch.com/classes
-    [ ( "Sentinel", [ "Forge Guard", "Void Knight", "Paladin" ] )
-    , ( "Mage", [ "Runemaster", "Spellblade", "Sorcerer" ] )
-    , ( "Primalist", [ "Shaman", "Beastmaster", "Druid" ] )
-    , ( "Acolyte", [ "Lich", "Necromancer", "Warlock" ] )
-    , ( "Rogue", [ "Bladedancer", "Marksman", "Falconer" ] )
-    ]
-
-
-classesList : List String
-classesList =
-    subclassesList |> List.map Tuple.first
-
-
-subclasses : Dict String String
-subclasses =
-    subclassesList
-        |> List.concatMap (\( cls, subs ) -> ( cls, cls ) :: List.map (\sub -> ( sub, cls )) subs)
-        |> Dict.fromList
-
-
-decoder : D.Decoder (List Entry)
-decoder =
+leaderboardResultDecoder : D.Decoder (List Entry)
+leaderboardResultDecoder =
     D.andThen
         (\status ->
             case status of
@@ -144,7 +180,7 @@ decodeData =
     D.map6 Entry
         (D.field "player_username" D.string)
         (D.field "char_name" D.string)
-        (D.field "char_class" D.string)
+        (D.field "char_class" <| D.map Game.Subclass.get D.string)
         (D.field "char_lvl" decodeIntString)
         (D.field "max_wave" decodeIntString)
         (D.map5 (\a b c d e -> [ a, b, c, d, e ])

@@ -1,13 +1,16 @@
 module Pages.Home exposing (Model, Msg(..), init, subscriptions, toSession, update, view)
 
 import Dict exposing (Dict)
+import Game.Class exposing (Class)
+import Game.Subclass exposing (Subclass)
 import Html as H exposing (..)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import List.Extra
 import RemoteData exposing (RemoteData)
 import Route exposing (Route)
-import Session exposing (Ability, Entry, Session)
+import Session exposing (Ability, Entry, Leaderboard, Session)
+import Util
 import View.Nav
 
 
@@ -66,60 +69,49 @@ view model =
         RemoteData.Failure err ->
             code [] [ text <| Debug.toString err ]
 
-        RemoteData.Success entries ->
+        RemoteData.Success lb0 ->
             let
-                subclassEntries : List ( String, Int )
-                subclassEntries =
-                    entries
-                        |> List.map .charClass
-                        |> List.Extra.gatherEquals
-                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
-                        |> List.sortBy Tuple.second
-                        |> List.reverse
-
-                classEntries : List ( String, Int )
-                classEntries =
-                    entries
-                        |> List.filterMap (\e -> Dict.get e.charClass Session.subclasses)
-                        |> List.Extra.gatherEquals
-                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
-                        |> List.sortBy Tuple.second
-                        |> List.reverse
-
-                abilityEntries : List ( ( Ability, String ), Int )
-                abilityEntries =
-                    entries
-                        |> List.concatMap (\e -> e.abilities |> List.map (\a -> ( a, e.charClass )))
-                        |> List.Extra.gatherEquals
-                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
-                        |> List.sortBy Tuple.second
-                        |> List.reverse
+                lb =
+                    lb0.rawList |> Session.toLeaderboard model.query
             in
             div []
-                [ details []
-                    [ summary [] [ text "Ladder" ]
-                    , table [] (entries |> List.indexedMap viewEntry |> List.map (tr []))
+                [ div [ class "ladder-classes" ] (lb.subclasses |> List.map (viewSubclassFilter model.query lb))
+                , div [ class "ladder-body" ]
+                    [ div [] [ text "hello" ]
+                    , table []
+                        [ thead []
+                            [ tr []
+                                [ th [] [ text "Rank" ]
+                                , th [] [ text "Character" ]
+                                , th [] []
+                                , th [] [ text "Level" ]
+                                , th [] [ text "Arena" ]
+                                , th [] [ text "Skills" ]
+                                ]
+                            ]
+                        , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr []))
+                        ]
                     ]
                 , details []
                     [ summary [] [ text "Popular subclasses" ]
                     , table []
-                        (subclassEntries
-                            |> List.indexedMap (viewSubclassEntry abilityEntries)
+                        (lb.subclasses
+                            |> List.indexedMap (viewSubclassEntry lb.abilities)
                             |> List.map (tr [])
                         )
                     ]
                 , details []
                     [ summary [] [ text "Popular classes" ]
                     , table []
-                        (classEntries
+                        (lb.classes
                             |> List.indexedMap viewClassEntry
                             |> List.map (tr [])
                         )
                     ]
                 , details []
                     [ summary [] [ text "Popular abilities" ]
-                    , table [ class "abilities" ]
-                        (abilityEntries
+                    , table []
+                        (lb.abilities
                             |> List.indexedMap viewAbilityEntry
                             |> List.map (tr [])
                         )
@@ -128,40 +120,60 @@ view model =
     ]
 
 
+viewSubclassFilter : Route.HomeQuery -> Leaderboard -> ( Result String Subclass, Int ) -> Html msg
+viewSubclassFilter query lb ( subclass, count ) =
+    let
+        name : String
+        name =
+            subclass |> Util.unwrapResult identity .name
+    in
+    div [ class "class-filter-entry" ]
+        [ a [ { query | subclass = Util.ifthen (query.subclass == Just name) Nothing (Just name) } |> Route.Home |> Route.href ]
+            [ small [] [ text name ]
+            , div [] (viewClassIcon subclass)
+            , div [] [ text <| formatPercent <| toFloat count / toFloat lb.rawSize ]
+            ]
+        ]
+
+
+formatPercent : Float -> String
+formatPercent f =
+    (f * 100 |> round |> String.fromInt) ++ "%"
+
+
 viewEntry : Int -> Entry -> List (Html msg)
 viewEntry index row =
     [ td [] [ text <| String.fromInt <| 1 + index ]
-    , td [] [ text row.playerUsername ]
+
+    -- , td [] [ text row.playerUsername ]
     , td [] [ text row.charName ]
-    , td [] [ text row.charClass ]
+
+    -- , td [] (viewClass row.charClass)
+    , td [] (viewClassIcon row.charClass)
     , td [] [ text <| String.fromInt row.charLvl ]
     , td [] [ text <| String.fromInt row.maxWave ]
-    , td [ class "abilities" ] (row.abilities |> List.filterMap viewAbility)
+    , td [] (row.abilities |> List.filterMap viewAbility)
     ]
 
 
-viewClassEntry : Int -> ( String, Int ) -> List (Html msg)
+viewClassEntry : Int -> ( Result String Class, Int ) -> List (Html msg)
 viewClassEntry index ( class, count ) =
-    [ td [] [ text <| String.fromInt <| 1 + index ]
-    , td [] [ text class ]
-    , td [] [ text <| String.fromInt count ]
+    [ td [] [ 1 + index |> String.fromInt |> text ]
+    , td [] (class |> viewClass)
+    , td [] [ count |> String.fromInt |> text ]
     ]
 
 
-viewSubclassEntry : List ( ( Ability, String ), Int ) -> Int -> ( String, Int ) -> List (Html msg)
+viewSubclassEntry : List ( ( Ability, Result String Subclass ), Int ) -> Int -> ( Result String Subclass, Int ) -> List (Html msg)
 viewSubclassEntry abilities index ( subclass, count ) =
-    let
-        class =
-            Dict.get subclass Session.subclasses
-    in
-    [ td [] [ text <| String.fromInt <| 1 + index ]
-    , td [] [ text subclass ]
-    , td [] [ text <| Maybe.withDefault "???" class ]
-    , td [] [ text <| String.fromInt count ]
+    [ td [] [ 1 + index |> String.fromInt |> text ]
+    , td [] (subclass |> viewClass)
+    , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
+    , td [] [ count |> String.fromInt |> text ]
     , td []
         [ details []
             [ summary [] [ text "abilities" ]
-            , table [ A.class "abilities" ]
+            , table []
                 (abilities
                     |> List.filter (\( ( a, s ), c ) -> s == subclass)
                     |> List.indexedMap viewAbilityEntry
@@ -172,12 +184,8 @@ viewSubclassEntry abilities index ( subclass, count ) =
     ]
 
 
-viewAbilityEntry : Int -> ( ( Ability, String ), Int ) -> List (Html msg)
+viewAbilityEntry : Int -> ( ( Ability, Result String Subclass ), Int ) -> List (Html msg)
 viewAbilityEntry index ( ( ability, subclass ), count ) =
-    let
-        class =
-            Dict.get subclass Session.subclasses
-    in
     [ td [] [ text <| String.fromInt <| 1 + index ]
     , td []
         (case ability.imagePath of
@@ -185,7 +193,7 @@ viewAbilityEntry index ( ( ability, subclass ), count ) =
                 []
 
             Just imagePath ->
-                [ img [ src imagePath ] [] ]
+                [ img [ class "ability-icon", src imagePath ] [] ]
         )
     , td []
         [ if ability.name == "" then
@@ -194,10 +202,30 @@ viewAbilityEntry index ( ( ability, subclass ), count ) =
           else
             text ability.name
         ]
-    , td [] [ text subclass ]
-    , td [] [ text <| Maybe.withDefault "???" class ]
+    , td [] (subclass |> viewClass)
+    , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
     , td [] [ text <| String.fromInt count ]
     ]
+
+
+viewClass : Result String { c | image : String, name : String } -> List (Html msg)
+viewClass res =
+    case res of
+        Ok cls ->
+            [ img [ class "class-icon", src cls.image ] [], text cls.name ]
+
+        Err name ->
+            [ text name ]
+
+
+viewClassIcon : Result String { c | image : String, name : String } -> List (Html msg)
+viewClassIcon res =
+    case res of
+        Ok cls ->
+            [ img [ class "class-icon", src cls.image, title cls.name ] [] ]
+
+        Err name ->
+            [ text name ]
 
 
 viewAbility : Ability -> Maybe (Html msg)
@@ -205,5 +233,5 @@ viewAbility a =
     a.imagePath
         |> Maybe.map
             (\imagePath ->
-                img [ title a.name, src imagePath ] []
+                img [ class "ability-icon", title a.name, src imagePath ] []
             )

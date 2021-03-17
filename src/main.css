@@ -1,7 +1,33 @@
+body {
+  background-color: black;
+  color: #ccc;
+}
+a:link {
+  color: #66f;
+}
+a:visited {
+  color: #f6f;
+}
+
+.ladder-classes {
+  display: flex;
+}
+.ladder-body {
+  display: flex;
+}
 nav {
   display: flex;
 }
-.abilities img {
+img.ability-icon,
+img.class-icon {
   height: 2em;
+  border-radius: 1em;
   margin: 0;
+}
+.class-filter-entry {
+  text-align: center;
+}
+.class-filter-entry img.class-icon {
+  height: 4em;
+  border-radius: 1em;
 }

@@ -28,16 +28,20 @@ type Route
 
 
 type alias HomeQuery =
+    -- remote leaderboard query params
     { version : Maybe String
     , ssf : Bool
     , hc : Bool
     , class : Maybe String
+
+    -- local filters
+    , subclass : Maybe String
     }
 
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing
+    HomeQuery Nothing False False Nothing Nothing
 
 
 home : Route
@@ -55,11 +59,12 @@ parser =
     P.oneOf
         [ P.map Home <|
             P.top
-                <?> Q.map4 HomeQuery
+                <?> Q.map5 HomeQuery
                         (Q.string "version")
                         (boolQueryParser "ssf")
                         (boolQueryParser "hc")
                         (Q.string "class")
+                        (Q.string "subclass")
         , P.map Debug <| P.s "debug"
         ]
 
@@ -70,6 +75,7 @@ homeQueryBuilder q =
     , q.ssf |> boolQueryBuilder "ssf"
     , q.hc |> boolQueryBuilder "hc"
     , q.class |> Maybe.map (B.string "class")
+    , q.subclass |> Maybe.map (B.string "subclass")
     ]
         |> List.filterMap identity
 
