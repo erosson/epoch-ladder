@@ -10,5 +10,5 @@ import Session exposing (Session)
 view : Session -> List (Html msg)
 view _ =
     [ div [] [ text "Not found" ]
-    , div [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
+    , div [] [ a [ Route.href Route.home ] [ text "Home" ] ]
     ]

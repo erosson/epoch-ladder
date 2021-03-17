@@ -1,16 +1,48 @@
-module Route exposing (Route(..), href, parse, pushUrl, pushUrl_, replaceUrl, replaceUrl_, toString)
+module Route exposing
+    ( HomeQuery
+    , Route(..)
+    , home
+    , homeQuery
+    , href
+    , parse
+    , pushUrl
+    , pushUrl_
+    , replaceUrl
+    , replaceUrl_
+    , toString
+    )
 
 import Browser.Navigation as Nav
+import Dict exposing (Dict)
 import Html as H
 import Html.Attributes as A
 import Url exposing (Url)
-import Url.Parser as P exposing ((</>), Parser)
+import Url.Builder as B
+import Url.Parser as P exposing ((</>), (<?>), Parser)
+import Url.Parser.Query as Q
 
 
 type Route
-    = Home
-    | Leaderboard String
+    = Home HomeQuery
     | Debug
+
+
+type alias HomeQuery =
+    { version : Maybe String
+    , ssf : Bool
+    , hc : Bool
+    , class : Maybe String
+    }
+
+
+homeQuery : HomeQuery
+homeQuery =
+    HomeQuery Nothing False False Nothing
+
+
+home : Route
+home =
+    Home homeQuery
 
 
 parse : Url -> Maybe Route
@@ -21,23 +53,53 @@ parse =
 parser : Parser (Route -> a) a
 parser =
     P.oneOf
-        [ P.map Home P.top
-        , P.map Leaderboard <| P.s "leader-board" </> P.string
+        [ P.map Home <|
+            P.top
+                <?> Q.map4 HomeQuery
+                        (Q.string "version")
+                        (boolQueryParser "ssf")
+                        (boolQueryParser "hc")
+                        (Q.string "class")
         , P.map Debug <| P.s "debug"
         ]
+
+
+homeQueryBuilder : HomeQuery -> List B.QueryParameter
+homeQueryBuilder q =
+    [ q.version |> Maybe.map (B.string "version")
+    , q.ssf |> boolQueryBuilder "ssf"
+    , q.hc |> boolQueryBuilder "hc"
+    , q.class |> Maybe.map (B.string "class")
+    ]
+        |> List.filterMap identity
+
+
+boolQueryParser : String -> Q.Parser Bool
+boolQueryParser name =
+    [ "true", "1" ]
+        |> List.map (\s -> ( s, True ))
+        |> Dict.fromList
+        |> Q.enum name
+        |> Q.map (Maybe.withDefault False)
+
+
+boolQueryBuilder : String -> Bool -> Maybe B.QueryParameter
+boolQueryBuilder name val =
+    if val then
+        B.string name "true" |> Just
+
+    else
+        Nothing
 
 
 toString : Route -> String
 toString route =
     case route of
-        Home ->
-            "/"
-
-        Leaderboard code ->
-            "/leader-board/" ++ code
+        Home query ->
+            B.absolute [] <| homeQueryBuilder query
 
         Debug ->
-            "/debug"
+            B.absolute [ "debug" ] []
 
 
 href : Route -> H.Attribute msg

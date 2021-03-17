@@ -7,21 +7,29 @@ import Html.Events as E exposing (..)
 import List.Extra
 import RemoteData exposing (RemoteData)
 import Route exposing (Route)
-import Session exposing (Ability, Entry, LeaderboardRequest, Session)
+import Session exposing (Ability, Entry, Session)
 import View.Nav
 
 
 type alias Model =
-    { session : Session }
+    { query : Route.HomeQuery
+    , session : Session
+    }
 
 
 type Msg
     = SessionMsg Session.Msg
 
 
-init : Session -> ( Model, Cmd Msg )
-init session =
-    ( { session = session }, Cmd.none )
+init : Route.HomeQuery -> Session -> ( Model, Cmd Msg )
+init query session0 =
+    let
+        ( session, cmd ) =
+            session0 |> Session.fetchLeaderboard query
+    in
+    ( Model query session
+    , Cmd.map SessionMsg cmd
+    )
 
 
 toSession : Model -> Session
@@ -43,8 +51,80 @@ subscriptions model =
 
 view : Model -> List (Html Msg)
 view model =
-    [ h1 [] [ text "Last Epoch ladder popularity" ]
-    , View.Nav.view Session.defaultLeaderboardReq
+    [ h1 []
+        [ text "Last Epoch ladder popularity: "
+        , text <| Session.toLeaderboardCode model.query
+        ]
+    , View.Nav.view model.query
+    , case model.session.leaderboard of
+        RemoteData.NotAsked ->
+            text "loading."
+
+        RemoteData.Loading ->
+            text "loading..."
+
+        RemoteData.Failure err ->
+            code [] [ text <| Debug.toString err ]
+
+        RemoteData.Success entries ->
+            let
+                subclassEntries : List ( String, Int )
+                subclassEntries =
+                    entries
+                        |> List.map .charClass
+                        |> List.Extra.gatherEquals
+                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
+                        |> List.sortBy Tuple.second
+                        |> List.reverse
+
+                classEntries : List ( String, Int )
+                classEntries =
+                    entries
+                        |> List.filterMap (\e -> Dict.get e.charClass Session.subclasses)
+                        |> List.Extra.gatherEquals
+                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
+                        |> List.sortBy Tuple.second
+                        |> List.reverse
+
+                abilityEntries : List ( ( Ability, String ), Int )
+                abilityEntries =
+                    entries
+                        |> List.concatMap (\e -> e.abilities |> List.map (\a -> ( a, e.charClass )))
+                        |> List.Extra.gatherEquals
+                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
+                        |> List.sortBy Tuple.second
+                        |> List.reverse
+            in
+            div []
+                [ details []
+                    [ summary [] [ text "Ladder" ]
+                    , table [] (entries |> List.indexedMap viewEntry |> List.map (tr []))
+                    ]
+                , details []
+                    [ summary [] [ text "Popular subclasses" ]
+                    , table []
+                        (subclassEntries
+                            |> List.indexedMap (viewSubclassEntry abilityEntries)
+                            |> List.map (tr [])
+                        )
+                    ]
+                , details []
+                    [ summary [] [ text "Popular classes" ]
+                    , table []
+                        (classEntries
+                            |> List.indexedMap viewClassEntry
+                            |> List.map (tr [])
+                        )
+                    ]
+                , details []
+                    [ summary [] [ text "Popular abilities" ]
+                    , table [ class "abilities" ]
+                        (abilityEntries
+                            |> List.indexedMap viewAbilityEntry
+                            |> List.map (tr [])
+                        )
+                    ]
+                ]
     ]
 
 

@@ -9,7 +9,7 @@ module Session exposing
     , fetchLeaderboard
     , init
     , subclasses
-    , toCode
+    , toLeaderboardCode
     , update
     )
 
@@ -42,16 +42,17 @@ type alias Ability =
     { name : String, imagePath : Maybe String }
 
 
-type alias LeaderboardRequest =
-    { version : String
-    , ssf : Bool
-    , hardcore : Bool
-    , class : Maybe String
+type alias LeaderboardRequest r =
+    { r
+        | version : Maybe String
+        , ssf : Bool
+        , hc : Bool
+        , class : Maybe String
     }
 
 
 defaultLeaderboardReq =
-    LeaderboardRequest "beta081" False False Nothing
+    { version = Nothing, ssf = False, hc = False, class = Nothing }
 
 
 type Msg
@@ -70,34 +71,32 @@ update msg session =
             { session | leaderboard = res |> RemoteData.fromResult }
 
 
-toCode : LeaderboardRequest -> String
-toCode req =
-    let
-        ssf =
-            if req.ssf then
-                "ssf"
-
-            else
-                ""
-
-        hardcore =
-            if req.hardcore then
-                "hardcore"
-
-            else
-                "softcore"
-
-        class =
-            req.class |> Maybe.withDefault "allclass"
-    in
-    [ req.version, ssf, hardcore, String.toLower class, "arenawave" ] |> String.join ""
+toLeaderboardCode : LeaderboardRequest r -> String
+toLeaderboardCode req =
+    [ req.version |> Maybe.withDefault "beta081"
+    , ifthen req.ssf "ssf" ""
+    , ifthen req.hc "hardcore" "softcore"
+    , req.class |> Maybe.withDefault "allclass" |> String.toLower
+    , "arenawave"
+    ]
+        |> String.join ""
 
 
-fetchLeaderboard : String -> Session -> ( Session, Cmd Msg )
-fetchLeaderboard code session =
+ifthen : Bool -> a -> a -> a
+ifthen pred t f =
+    -- `elm-format`-friendly compact branching
+    if pred then
+        t
+
+    else
+        f
+
+
+fetchLeaderboard : LeaderboardRequest r -> Session -> ( Session, Cmd Msg )
+fetchLeaderboard req session =
     ( { session | leaderboard = RemoteData.Loading }
     , Http.get
-        { url = "https://leapi.lastepoch.com/api/leader-board?code=" ++ code
+        { url = "https://leapi.lastepoch.com/api/leader-board?code=" ++ toLeaderboardCode req
         , expect = Http.expectJson HttpGetLeaderBoard decoder
         }
     )

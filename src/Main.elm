@@ -7,7 +7,6 @@ import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import Pages.Debug
 import Pages.Home
-import Pages.Leaderboard
 import Pages.NotFound
 import Route exposing (Route)
 import Session exposing (Session)
@@ -20,7 +19,6 @@ import Url exposing (Url)
 
 type Model
     = Home Pages.Home.Model
-    | Leaderboard Pages.Leaderboard.Model
     | Debug Pages.Debug.Model
     | NotFound Session
 
@@ -47,9 +45,6 @@ toSession model =
         Home pgmodel ->
             Pages.Home.toSession pgmodel
 
-        Leaderboard pgmodel ->
-            Pages.Leaderboard.toSession pgmodel
-
         Debug pgmodel ->
             Pages.Debug.toSession pgmodel
 
@@ -62,11 +57,8 @@ routeTo mroute =
                     Nothing ->
                         ( NotFound session, Cmd.none )
 
-                    Just Route.Home ->
-                        session |> Pages.Home.init |> Tuple.mapBoth Home (Cmd.map HomeMsg)
-
-                    Just (Route.Leaderboard code) ->
-                        session |> Pages.Leaderboard.init code |> Tuple.mapBoth Leaderboard (Cmd.map LeaderboardMsg)
+                    Just (Route.Home query) ->
+                        session |> Pages.Home.init query |> Tuple.mapBoth Home (Cmd.map HomeMsg)
 
                     Just Route.Debug ->
                         session |> Pages.Debug.init |> Tuple.mapBoth Debug (Cmd.map DebugMsg)
@@ -81,7 +73,6 @@ type Msg
     = OnUrlRequest Browser.UrlRequest
     | OnUrlChange Url
     | HomeMsg Pages.Home.Msg
-    | LeaderboardMsg Pages.Leaderboard.Msg
     | DebugMsg Pages.Debug.Msg
 
 
@@ -111,14 +102,6 @@ update msg model =
                 _ ->
                     ( model, Cmd.none )
 
-        LeaderboardMsg pgmsg ->
-            case model of
-                Leaderboard pgmodel ->
-                    Pages.Leaderboard.update pgmsg pgmodel |> Tuple.mapBoth Leaderboard (Cmd.map LeaderboardMsg)
-
-                _ ->
-                    ( model, Cmd.none )
-
         DebugMsg pgmsg ->
             case model of
                 Debug pgmodel ->
@@ -141,9 +124,6 @@ subscriptions model =
         Home pgmodel ->
             Pages.Home.subscriptions pgmodel |> Sub.map HomeMsg
 
-        Leaderboard pgmodel ->
-            Pages.Leaderboard.subscriptions pgmodel |> Sub.map LeaderboardMsg
-
         Debug pgmodel ->
             Pages.Debug.subscriptions pgmodel |> Sub.map DebugMsg
 
@@ -162,9 +142,6 @@ view model =
 
             Home pgmodel ->
                 Pages.Home.view pgmodel |> List.map (H.map HomeMsg)
-
-            Leaderboard pgmodel ->
-                Pages.Leaderboard.view pgmodel |> List.map (H.map LeaderboardMsg)
 
             Debug pgmodel ->
                 Pages.Debug.view pgmodel |> List.map (H.map DebugMsg)

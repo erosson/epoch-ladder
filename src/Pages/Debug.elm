@@ -43,5 +43,5 @@ view model =
 
     -- , div [] [ text <| Debug.toString model.session ]
     , div [] [ text "..." ]
-    , div [] [ a [ Route.href Route.Home ] [ text "Home" ] ]
+    , div [] [ a [ Route.href Route.home ] [ text "Home" ] ]
     ]
