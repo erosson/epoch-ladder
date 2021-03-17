@@ -42,7 +42,8 @@ type alias Leaderboard =
     , rawSize : Int
     , subclasses : List ( Result String Subclass, Int )
     , classes : List ( Result String Class, Int )
-    , abilities : List ( ( Ability, Result String Subclass ), Int )
+    , abilityClasses : List ( ( Ability, Result String Subclass ), Int )
+    , abilities : List ( Ability, Int )
     }
 
 
@@ -53,6 +54,7 @@ type alias Entry =
     , charLvl : Int
     , maxWave : Int
     , abilities : List Ability
+    , abilitySet : Set String
     }
 
 
@@ -77,7 +79,7 @@ update msg session =
 
 
 toLeaderboard : HomeQuery -> List Entry -> Leaderboard
-toLeaderboard filter list =
+toLeaderboard filter rawList =
     let
         popularity : (a -> comparable) -> List a -> List a -> List ( a, Int )
         popularity toKey all votes =
@@ -99,26 +101,30 @@ toLeaderboard filter list =
             counts ++ List.map (\e -> ( e, 0 )) uncounted
 
         rankedList =
-            list |> List.indexedMap Tuple.pair
+            rawList |> List.indexedMap Tuple.pair
 
-        filteredList =
+        rankedFilteredList =
             rankedList
                 |> List.filter
                     (Tuple.second
                         >> (\entry ->
                                 List.all identity
                                     [ filter.subclass == Nothing || filter.subclass == Just (Util.unwrapResult identity .name entry.charClass)
+                                    , filter.skill |> Maybe.map (\skill -> Set.member skill entry.abilitySet) |> Maybe.withDefault True
                                     ]
                            )
                     )
+
+        filteredList =
+            rankedFilteredList |> List.map Tuple.second
     in
-    { list = filteredList |> List.map Tuple.second
-    , rankedList = filteredList
-    , rawList = list
+    { list = filteredList
+    , rankedList = rankedFilteredList
+    , rawList = rawList
     , size = List.length filteredList
-    , rawSize = List.length list
+    , rawSize = List.length rawList
     , subclasses =
-        list
+        rawList
             |> List.map .charClass
             |> popularity (Util.unwrapResult identity .name)
                 (Game.Subclass.list
@@ -126,7 +132,7 @@ toLeaderboard filter list =
                     |> List.map Ok
                 )
     , classes =
-        list
+        rawList
             |> List.map (.charClass >> Result.map .class)
             |> popularity (Util.unwrapResult identity .name)
                 (Game.Class.list
@@ -134,8 +140,14 @@ toLeaderboard filter list =
                     |> List.map Ok
                 )
     , abilities =
-        list
+        filteredList
+            |> List.concatMap .abilities
+            |> List.filter (\a -> a.name /= "")
+            |> popularity .name []
+    , abilityClasses =
+        filteredList
             |> List.concatMap (\e -> e.abilities |> List.map (\a -> ( a, e.charClass )))
+            |> List.filter (\( a, _ ) -> a.name /= "")
             |> popularity (Tuple.first >> .name) []
     }
 
@@ -177,19 +189,23 @@ leaderboardResultDecoder =
 
 decodeData : D.Decoder (List Entry)
 decodeData =
-    D.map6 Entry
+    D.map5 Entry
         (D.field "player_username" D.string)
         (D.field "char_name" D.string)
         (D.field "char_class" <| D.map Game.Subclass.get D.string)
         (D.field "char_lvl" decodeIntString)
         (D.field "max_wave" decodeIntString)
-        (D.map5 (\a b c d e -> [ a, b, c, d, e ])
-            (decodeAbility "1")
-            (decodeAbility "2")
-            (decodeAbility "3")
-            (decodeAbility "4")
-            (decodeAbility "5")
-        )
+        |> D.andThen
+            (\entry ->
+                D.map (\abilities -> entry abilities <| Set.fromList <| List.map .name abilities)
+                    (D.map5 (\a b c d e -> [ a, b, c, d, e ])
+                        (decodeAbility "1")
+                        (decodeAbility "2")
+                        (decodeAbility "3")
+                        (decodeAbility "4")
+                        (decodeAbility "5")
+                    )
+            )
         |> D.field "additionalData"
         |> D.list
         |> D.field "data"

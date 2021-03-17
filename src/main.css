@@ -15,6 +15,11 @@ a:visited {
 .ladder-body {
   display: flex;
 }
+.ladder-body > * {
+  margin: 1em;
+  border: 1px solid grey;
+  border-radius: 1em;
+}
 nav {
   display: flex;
 }
@@ -30,4 +35,19 @@ img.class-icon {
 .class-filter-entry img.class-icon {
   height: 4em;
   border-radius: 1em;
+}
+.ability-filter {
+  /* padding-left: 0; */
+  /* max-height: 25em; */
+  /* overflow: auto; */
+}
+.ability-filter-entry {
+  /* list-style-type: none; */
+  position: relative;
+}
+.ability-filter-entry .percent {
+  float: right;
+}
+meter {
+  width: 100%;
 }

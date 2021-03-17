@@ -67,7 +67,8 @@ view model =
             text "loading..."
 
         RemoteData.Failure err ->
-            code [] [ text <| Debug.toString err ]
+            -- code [] [ text <| Debug.toString err ]
+            code [] [ text "error fetching leaderboard" ]
 
         RemoteData.Success lb0 ->
             let
@@ -77,12 +78,20 @@ view model =
             div []
                 [ div [ class "ladder-classes" ] (lb.subclasses |> List.map (viewSubclassFilter model.query lb))
                 , div [ class "ladder-body" ]
-                    [ div [] [ text "hello" ]
+                    [ table [ class "ability-filter" ]
+                        [ thead []
+                            [ tr []
+                                [ th [] []
+                                , th [] [ text "Skill" ]
+                                , th [] []
+                                ]
+                            ]
+                        , tbody [] (lb.abilities |> List.indexedMap (viewAbilityFilter model.query lb))
+                        ]
                     , table []
                         [ thead []
                             [ tr []
-                                [ th [] [ text "Rank" ]
-                                , th [] [ text "Character" ]
+                                [ th [] [ text "Character" ]
                                 , th [] []
                                 , th [] [ text "Level" ]
                                 , th [] [ text "Arena" ]
@@ -91,30 +100,6 @@ view model =
                             ]
                         , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr []))
                         ]
-                    ]
-                , details []
-                    [ summary [] [ text "Popular subclasses" ]
-                    , table []
-                        (lb.subclasses
-                            |> List.indexedMap (viewSubclassEntry lb.abilities)
-                            |> List.map (tr [])
-                        )
-                    ]
-                , details []
-                    [ summary [] [ text "Popular classes" ]
-                    , table []
-                        (lb.classes
-                            |> List.indexedMap viewClassEntry
-                            |> List.map (tr [])
-                        )
-                    ]
-                , details []
-                    [ summary [] [ text "Popular abilities" ]
-                    , table []
-                        (lb.abilities
-                            |> List.indexedMap viewAbilityEntry
-                            |> List.map (tr [])
-                        )
                     ]
                 ]
     ]
@@ -136,6 +121,37 @@ viewSubclassFilter query lb ( subclass, count ) =
         ]
 
 
+viewAbilityFilter : Route.HomeQuery -> Leaderboard -> Int -> ( Ability, Int ) -> Html msg
+viewAbilityFilter query lb index ( ability, count ) =
+    let
+        td_ body =
+            td [] [ a [ { query | skill = Util.ifthen (query.skill == Just ability.name) Nothing (Just ability.name) } |> Route.Home |> Route.href ] body ]
+
+        percent =
+            formatPercent <| toFloat count / toFloat lb.size
+    in
+    tr [ class "ability-filter-entry" ]
+        -- [ td_ [ text <| String.fromInt <| 1 + index]
+        [ td_
+            [ ability.imagePath
+                |> Maybe.map (\image -> img [ class "ability-icon", src image ] [])
+                |> Maybe.withDefault (span [] [])
+            ]
+        , td_
+            [ div []
+                [ text ability.name
+                , span [ class "percent" ] [ text percent ]
+                ]
+            , meter
+                [ A.max <| String.fromInt lb.size
+                , A.value <| String.fromInt count
+                , title percent
+                ]
+                []
+            ]
+        ]
+
+
 formatPercent : Float -> String
 formatPercent f =
     (f * 100 |> round |> String.fromInt) ++ "%"
@@ -143,10 +159,9 @@ formatPercent f =
 
 viewEntry : Int -> Entry -> List (Html msg)
 viewEntry index row =
-    [ td [] [ text <| String.fromInt <| 1 + index ]
-
+    -- [ td [] [ text <| String.fromInt <| 1 + index ]
     -- , td [] [ text row.playerUsername ]
-    , td [] [ text row.charName ]
+    [ td [] [ text row.charName ]
 
     -- , td [] (viewClass row.charClass)
     , td [] (viewClassIcon row.charClass)

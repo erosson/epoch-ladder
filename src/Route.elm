@@ -36,12 +36,13 @@ type alias HomeQuery =
 
     -- local filters
     , subclass : Maybe String
+    , skill : Maybe String
     }
 
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Nothing
+    HomeQuery Nothing False False Nothing Nothing Nothing
 
 
 home : Route
@@ -59,12 +60,13 @@ parser =
     P.oneOf
         [ P.map Home <|
             P.top
-                <?> Q.map5 HomeQuery
+                <?> Q.map6 HomeQuery
                         (Q.string "version")
                         (boolQueryParser "ssf")
                         (boolQueryParser "hc")
                         (Q.string "class")
                         (Q.string "subclass")
+                        (Q.string "skill")
         , P.map Debug <| P.s "debug"
         ]
 
@@ -76,6 +78,7 @@ homeQueryBuilder q =
     , q.hc |> boolQueryBuilder "hc"
     , q.class |> Maybe.map (B.string "class")
     , q.subclass |> Maybe.map (B.string "subclass")
+    , q.skill |> Maybe.map (B.string "skill")
     ]
         |> List.filterMap identity
 
