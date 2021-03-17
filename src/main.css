@@ -20,6 +20,12 @@ a:visited {
   border: 1px solid grey;
   border-radius: 1em;
 }
+.ladder-entry:hover,
+.ability-filter-entry:hover,
+.class-filter-entry:hover {
+  background-color: #110;
+  border-radius: 0.5em;
+}
 nav {
   display: flex;
 }
@@ -57,4 +63,8 @@ img.class-icon {
 }
 meter {
   width: 100%;
+}
+.username {
+  color: grey;
+  font-size: 70%;
 }

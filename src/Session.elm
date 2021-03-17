@@ -8,6 +8,7 @@ module Session exposing
     , init
     , toLeaderboard
     , toLeaderboardCode
+    , toLeaderboardUrl
     , update
     )
 
@@ -26,7 +27,7 @@ import Util
 
 
 type alias Session =
-    { leaderboard : RemoteData Http.Error Leaderboard
+    { leaderboard : Dict String { req : Route.HomeQuery, res : RemoteData Http.Error Leaderboard }
 
     -- Nav.Key cannot be unit tested; Maybe Nav.Key is a workaround.
     -- See https://github.com/elm-explorations/test/issues/24
@@ -68,14 +69,24 @@ type Msg
 
 init : Maybe Nav.Key -> Session
 init =
-    Session RemoteData.NotAsked
+    Session Dict.empty
 
 
 update : Msg -> Session -> Session
 update msg session =
     case msg of
         HttpGetLeaderBoard filter res ->
-            { session | leaderboard = res |> Result.map (toLeaderboard filter) |> RemoteData.fromResult }
+            { session
+                | leaderboard =
+                    session.leaderboard
+                        |> Dict.insert (toLeaderboardCode filter)
+                            { req = filter
+                            , res =
+                                res
+                                    |> Result.map (toLeaderboard filter)
+                                    |> RemoteData.fromResult
+                            }
+            }
 
 
 toLeaderboard : HomeQuery -> List Entry -> Leaderboard
@@ -164,13 +175,50 @@ toLeaderboardCode req =
 
 
 fetchLeaderboard : HomeQuery -> Session -> ( Session, Cmd Msg )
-fetchLeaderboard req session =
-    ( { session | leaderboard = RemoteData.Loading }
-    , Http.get
-        { url = "https://leapi.lastepoch.com/api/leader-board?code=" ++ toLeaderboardCode req
-        , expect = Http.expectJson (HttpGetLeaderBoard { homeQuery | class = req.class }) leaderboardResultDecoder
-        }
-    )
+fetchLeaderboard req0 session =
+    let
+        req =
+            -- TODO we should really have a narrower type here - but until then,
+            -- remove any possible influence the client-side filters have
+            { homeQuery
+                | version = req0.version
+                , ssf = req0.ssf
+                , hc = req0.hc
+                , class = req0.class
+            }
+
+        code =
+            toLeaderboardCode req
+
+        board =
+            session.leaderboard
+                |> Dict.get code
+                |> Maybe.withDefault { req = req, res = RemoteData.NotAsked }
+    in
+    case board.res |> Debug.log "res" of
+        -- set this leaderboard to loading, unless success or already-loading
+        RemoteData.Loading ->
+            ( session, Cmd.none )
+
+        RemoteData.Success b ->
+            ( session, Cmd.none )
+
+        _ ->
+            ( { session
+                | leaderboard =
+                    session.leaderboard
+                        |> Dict.insert code { req = req, res = RemoteData.Loading }
+              }
+            , Http.get
+                { url = toLeaderboardUrl req
+                , expect = Http.expectJson (HttpGetLeaderBoard req) leaderboardResultDecoder
+                }
+            )
+
+
+toLeaderboardUrl : HomeQuery -> String
+toLeaderboardUrl q =
+    "https://leapi.lastepoch.com/api/leader-board?code=" ++ toLeaderboardCode q
 
 
 leaderboardResultDecoder : D.Decoder (List Entry)

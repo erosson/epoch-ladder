@@ -7,6 +7,7 @@ import Html as H exposing (..)
 import Html.Attributes as A exposing (..)
 import Html.Events as E exposing (..)
 import List.Extra
+import Maybe.Extra
 import RemoteData exposing (RemoteData)
 import Route exposing (Route)
 import Session exposing (Ability, Entry, Leaderboard, Session)
@@ -55,13 +56,17 @@ subscriptions model =
 
 view : Model -> List (Html Msg)
 view model =
+    let
+        code_ =
+            Session.toLeaderboardCode model.query
+    in
     [ h1 []
         [ a [ Route.href Route.home ] [ text "Last Epoch ladder popularity" ]
         , text ": "
-        , text <| Session.toLeaderboardCode model.query
+        , text code_
         ]
     , View.Nav.view model.query
-    , case model.session.leaderboard of
+    , case model.session.leaderboard |> Dict.get code_ |> Maybe.Extra.unwrap RemoteData.NotAsked .res of
         RemoteData.NotAsked ->
             text "loading."
 
@@ -102,9 +107,10 @@ view model =
                                 , th [] [ text "Skills" ]
                                 ]
                             ]
-                        , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr []))
+                        , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr [ class "ladder-entry" ]))
                         ]
                     ]
+                , small [] [ a [ target "_blank", href <| Session.toLeaderboardUrl model.query ] [ text "source data" ] ]
                 ]
     ]
 
@@ -187,7 +193,10 @@ viewEntry : Int -> Entry -> List (Html msg)
 viewEntry index row =
     -- [ td [] [ text <| String.fromInt <| 1 + index ]
     -- , td [] [ text row.playerUsername ]
-    [ td [] [ text row.charName ]
+    [ td []
+        [ div [] [ text row.charName ]
+        , small [ class "username" ] [ text row.playerUsername ]
+        ]
 
     -- , td [] (viewClass row.charClass)
     , td [] (viewClassIcon row.charClass)
