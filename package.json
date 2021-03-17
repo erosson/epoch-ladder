@@ -1,6 +1,6 @@
 {
-  "name": "elm-application-template",
-  "description": "`git clone` this repository for a new Elm Browser.application, including session, page, and route boilerplate",
+  "name": "metapoch",
+  "description": "",
   "version": "1.0.0",
   "main": "src/index.js",
   "repository": "https://github.com/erosson/elm-application-template",

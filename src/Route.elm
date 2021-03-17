@@ -1,4 +1,4 @@
-module Route exposing (Route(..), href, parse, pushUrl, replaceUrl, toString)
+module Route exposing (Route(..), href, parse, pushUrl, pushUrl_, replaceUrl, replaceUrl_, toString)
 
 import Browser.Navigation as Nav
 import Html as H
@@ -40,11 +40,31 @@ href =
     toString >> A.href
 
 
-pushUrl : Nav.Key -> Route -> Cmd msg
-pushUrl nav =
+pushUrl_ : Nav.Key -> Route -> Cmd msg
+pushUrl_ nav =
     toString >> Nav.pushUrl nav
 
 
-replaceUrl : Nav.Key -> Route -> Cmd msg
-replaceUrl nav =
+pushUrl : Maybe Nav.Key -> Route -> Cmd msg
+pushUrl mnav =
+    case mnav of
+        Nothing ->
+            always Cmd.none
+
+        Just nav ->
+            pushUrl_ nav
+
+
+replaceUrl_ : Nav.Key -> Route -> Cmd msg
+replaceUrl_ nav =
     toString >> Nav.replaceUrl nav
+
+
+replaceUrl : Maybe Nav.Key -> Route -> Cmd msg
+replaceUrl mnav =
+    case mnav of
+        Nothing ->
+            always Cmd.none
+
+        Just nav ->
+            replaceUrl_ nav
