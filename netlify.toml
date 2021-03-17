@@ -1,5 +1,5 @@
 [build]
-  command = "yarn install --frozen-lockfile && yarn lint && yarn test && yarn build"
+  command = "yarn install --frozen-lockfile && yarn test && yarn build"
   publish = "build/"
 
 [[redirects]]
