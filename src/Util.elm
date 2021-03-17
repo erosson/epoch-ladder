@@ -19,3 +19,12 @@ ifthen pred t f =
 
     else
         f
+
+
+ifthenfn : (x -> Bool) -> (x -> a) -> (x -> a) -> x -> a
+ifthenfn pred t f val =
+    if pred val then
+        t val
+
+    else
+        f val

@@ -10,6 +10,7 @@ import List.Extra
 import RemoteData exposing (RemoteData)
 import Route exposing (Route)
 import Session exposing (Ability, Entry, Leaderboard, Session)
+import Set exposing (Set)
 import Util
 import View.Nav
 
@@ -55,7 +56,8 @@ subscriptions model =
 view : Model -> List (Html Msg)
 view model =
     [ h1 []
-        [ text "Last Epoch ladder popularity: "
+        [ a [ Route.href Route.home ] [ text "Last Epoch ladder popularity" ]
+        , text ": "
         , text <| Session.toLeaderboardCode model.query
         ]
     , View.Nav.view model.query
@@ -78,15 +80,17 @@ view model =
             div []
                 [ div [ class "ladder-classes" ] (lb.subclasses |> List.map (viewSubclassFilter model.query lb))
                 , div [ class "ladder-body" ]
-                    [ table [ class "ability-filter" ]
-                        [ thead []
-                            [ tr []
-                                [ th [] []
-                                , th [] [ text "Skill" ]
-                                , th [] []
+                    [ div [ class "ability-filter" ]
+                        [ table []
+                            [ thead []
+                                [ tr []
+                                    [ th [] []
+                                    , th [] [ text "Skill" ]
+                                    , th [] []
+                                    ]
                                 ]
+                            , tbody [] (lb.abilities |> List.indexedMap (viewAbilityFilter model.query lb))
                             ]
-                        , tbody [] (lb.abilities |> List.indexedMap (viewAbilityFilter model.query lb))
                         ]
                     , table []
                         [ thead []
@@ -111,9 +115,20 @@ viewSubclassFilter query lb ( subclass, count ) =
         name : String
         name =
             subclass |> Util.unwrapResult identity .name
+
+        selected =
+            Set.member name query.subclass
+
+        querySubclass =
+            Util.ifthen selected (Set.remove name query.subclass) (Set.insert name query.subclass)
     in
-    div [ class "class-filter-entry" ]
-        [ a [ { query | subclass = Util.ifthen (query.subclass == Just name) Nothing (Just name) } |> Route.Home |> Route.href ]
+    div
+        [ classList
+            [ ( "class-filter-entry", True )
+            , ( "selected", selected )
+            ]
+        ]
+        [ a [ { query | subclass = querySubclass } |> Route.Home |> Route.href ]
             [ small [] [ text name ]
             , div [] (viewClassIcon subclass)
             , div [] [ text <| formatPercent <| toFloat count / toFloat lb.rawSize ]
@@ -124,13 +139,24 @@ viewSubclassFilter query lb ( subclass, count ) =
 viewAbilityFilter : Route.HomeQuery -> Leaderboard -> Int -> ( Ability, Int ) -> Html msg
 viewAbilityFilter query lb index ( ability, count ) =
     let
+        selected =
+            Set.member ability.name query.skill
+
+        querySkill =
+            Util.ifthen selected (Set.remove ability.name query.skill) (Set.insert ability.name query.skill)
+
         td_ body =
-            td [] [ a [ { query | skill = Util.ifthen (query.skill == Just ability.name) Nothing (Just ability.name) } |> Route.Home |> Route.href ] body ]
+            td [] [ a [ { query | skill = querySkill } |> Route.Home |> Route.href ] body ]
 
         percent =
             formatPercent <| toFloat count / toFloat lb.size
     in
-    tr [ class "ability-filter-entry" ]
+    tr
+        [ classList
+            [ ( "ability-filter-entry", True )
+            , ( "selected", selected )
+            ]
+        ]
         -- [ td_ [ text <| String.fromInt <| 1 + index]
         [ td_
             [ ability.imagePath

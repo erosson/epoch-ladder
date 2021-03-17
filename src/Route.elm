@@ -16,10 +16,13 @@ import Browser.Navigation as Nav
 import Dict exposing (Dict)
 import Html as H
 import Html.Attributes as A
+import Maybe.Extra
+import Set exposing (Set)
 import Url exposing (Url)
 import Url.Builder as B
 import Url.Parser as P exposing ((</>), (<?>), Parser)
 import Url.Parser.Query as Q
+import Util
 
 
 type Route
@@ -35,14 +38,14 @@ type alias HomeQuery =
     , class : Maybe String
 
     -- local filters
-    , subclass : Maybe String
-    , skill : Maybe String
+    , subclass : Set String
+    , skill : Set String
     }
 
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Nothing Nothing
+    HomeQuery Nothing False False Nothing Set.empty Set.empty
 
 
 home : Route
@@ -65,8 +68,8 @@ parser =
                         (boolQueryParser "ssf")
                         (boolQueryParser "hc")
                         (Q.string "class")
-                        (Q.string "subclass")
-                        (Q.string "skill")
+                        (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
+                        (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
         , P.map Debug <| P.s "debug"
         ]
 
@@ -77,8 +80,18 @@ homeQueryBuilder q =
     , q.ssf |> boolQueryBuilder "ssf"
     , q.hc |> boolQueryBuilder "hc"
     , q.class |> Maybe.map (B.string "class")
-    , q.subclass |> Maybe.map (B.string "subclass")
-    , q.skill |> Maybe.map (B.string "skill")
+    , q.subclass
+        |> Set.toList
+        |> List.sort
+        |> String.join ","
+        |> Util.ifthenfn ((==) "") (always Nothing) Just
+        |> Maybe.map (B.string "subclass")
+    , q.skill
+        |> Set.toList
+        |> List.sort
+        |> String.join ","
+        |> Util.ifthenfn ((==) "") (always Nothing) Just
+        |> Maybe.map (B.string "skill")
     ]
         |> List.filterMap identity
 

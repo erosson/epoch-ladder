@@ -32,18 +32,25 @@ img.class-icon {
 .class-filter-entry {
   text-align: center;
 }
+.class-filter-entry.selected {
+  border: 0.15em solid #660;
+  border-radius: 0.5em;
+  background: #330;
+}
 .class-filter-entry img.class-icon {
   height: 4em;
   border-radius: 1em;
 }
-.ability-filter {
+.ability-filter table {
   /* padding-left: 0; */
   /* max-height: 25em; */
   /* overflow: auto; */
+  border-collapse: collapse;
 }
-.ability-filter-entry {
-  /* list-style-type: none; */
-  position: relative;
+.ability-filter-entry.selected {
+  border: 0.15em solid #660;
+  border-radius: 1em;
+  background: #330;
 }
 .ability-filter-entry .percent {
   float: right;

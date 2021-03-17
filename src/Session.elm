@@ -109,8 +109,8 @@ toLeaderboard filter rawList =
                     (Tuple.second
                         >> (\entry ->
                                 List.all identity
-                                    [ filter.subclass == Nothing || filter.subclass == Just (Util.unwrapResult identity .name entry.charClass)
-                                    , filter.skill |> Maybe.map (\skill -> Set.member skill entry.abilitySet) |> Maybe.withDefault True
+                                    [ Set.isEmpty filter.subclass || Set.member (Util.unwrapResult identity .name entry.charClass) filter.subclass
+                                    , Set.diff filter.skill entry.abilitySet |> Set.isEmpty
                                     ]
                            )
                     )
