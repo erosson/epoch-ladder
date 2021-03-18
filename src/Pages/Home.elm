@@ -117,8 +117,17 @@ view model =
                         , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr [ class "ladder-entry" ]))
                         ]
                     ]
-                , small [] [ a [ target "_blank", href <| Session.toLeaderboardUrl model.query ] [ text "source data: ", code [] [ text code_ ] ] ]
                 ]
+    , ul []
+        [ li []
+            [ a [ target "_blank", href <| Session.toLeaderboardUrl model.query ]
+                [ text "Last Epoch API data (", code [] [ text code_ ], text ")" ]
+            ]
+        , li []
+            [ a [ target "_blank", href "https://github.com/erosson/epoch-ladder" ]
+                [ text "Source code" ]
+            ]
+        ]
     ]
 
 
@@ -142,8 +151,8 @@ viewSubclassFilter query lb ( subclass, count ) =
             ]
         ]
         [ a [ { query | subclass = querySubclass } |> Route.Home |> Route.href ]
-            [ small [] [ text name ]
-            , div [] (viewClassIcon subclass)
+            [ div [] (viewClassIcon subclass)
+            , small [] [ text name ]
             , div [] [ text <| formatPercent <| toFloat count / toFloat lb.rawSize ]
             ]
         ]

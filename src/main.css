@@ -15,7 +15,7 @@ nav ul {
   margin: 0.5em;
   padding: 0.5em;
 }
-nav li {
+li {
   list-style: none;
 }
 nav ul.class-selector {
