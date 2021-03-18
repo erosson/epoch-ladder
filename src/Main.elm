@@ -134,7 +134,7 @@ subscriptions model =
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Elm Application"
+    { title = "Epoch Ladder"
     , body =
         case model of
             NotFound session ->

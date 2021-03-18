@@ -60,10 +60,11 @@ view model =
         code_ =
             Session.toLeaderboardCode model.query
     in
-    [ h1 []
-        [ a [ Route.href Route.home ] [ text "Last Epoch ladder popularity" ]
-        , text ": "
-        , text code_
+    [ h1 [] [ a [ Route.href Route.home ] [ text "Epoch Ladder" ] ]
+    , p []
+        [ text "An alternative view of "
+        , a [ target "_blank", href "https://lastepoch.com/ladder" ] [ text "Last Epoch's ladder" ]
+        , text " highlighting class and skill popularity."
         ]
     , View.Nav.view model.query
     , case model.session.leaderboard |> Dict.get code_ |> Maybe.Extra.unwrap RemoteData.NotAsked .res of
@@ -116,7 +117,7 @@ view model =
                         , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr [ class "ladder-entry" ]))
                         ]
                     ]
-                , small [] [ a [ target "_blank", href <| Session.toLeaderboardUrl model.query ] [ text "source data" ] ]
+                , small [] [ a [ target "_blank", href <| Session.toLeaderboardUrl model.query ] [ text "source data: ", code [] [ text code_ ] ] ]
                 ]
     ]
 
