@@ -99,3 +99,6 @@ meter {
 meter.exp {
   width: 5em;
 }
+.ladder-entry.dead {
+  opacity: 0.5;
+}

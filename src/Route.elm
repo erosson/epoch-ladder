@@ -41,12 +41,15 @@ type alias HomeQuery =
     -- local filters
     , subclass : Set String
     , skill : Set String
+
+    -- feature switches. TODO: these should be in a separate record if we add more pages
+    , enableExp : Bool
     }
 
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty
+    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty False
 
 
 home : Route
@@ -64,7 +67,7 @@ parser =
     P.oneOf
         [ P.map Home <|
             P.top
-                <?> Q.map7 HomeQuery
+                <?> Q.map8 HomeQuery
                         (Q.string "version")
                         (boolQueryParser "ssf")
                         (boolQueryParser "hc")
@@ -72,6 +75,7 @@ parser =
                         (Q.string "rank")
                         (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
                         (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
+                        (boolQueryParser "enableExp")
         , P.map Debug <| P.s "debug"
         ]
 
@@ -95,6 +99,7 @@ homeQueryBuilder q =
         |> String.join ","
         |> Util.ifthenfn ((==) "") (always Nothing) Just
         |> Maybe.map (B.string "skill")
+    , q.enableExp |> boolQueryBuilder "enableExp"
     ]
         |> List.filterMap identity
 

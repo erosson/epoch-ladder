@@ -92,8 +92,8 @@ view model =
                     , text " characters. "
                     , a [ Route.href <| Route.Home <| Session.resetLocalFilters model.query ] [ text "Reset filters" ]
                     ]
-                , case model.query.rank of
-                    Just "level" ->
+                , case ( model.query.rank, model.query.enableExp ) of
+                    ( Just "level", True ) ->
                         p [] [ text "WARNING: data for the \"level\" leaderboard is questionable. This data's not visible on Last Epoch's website; it's probably not production-ready." ]
 
                     _ ->
@@ -113,18 +113,23 @@ view model =
                         ]
                     , table []
                         [ thead []
-                            [ tr []
+                            [ tr [] <|
                                 [ th [] []
                                 , th [] [ text "Character" ]
                                 , th [] [ text "Arena" ]
                                 , th [] [ text "Skills" ]
                                 , th [] [ text "Level" ]
-                                , th [] [ text "Exp" ]
-                                , th [] []
-                                , th [] [ text "Deaths" ]
                                 ]
+                                    ++ (if model.query.enableExp then
+                                            [ th [] [ text "Exp" ], th [] [] ]
+
+                                        else
+                                            []
+                                       )
+                                    ++ [ th [] [ text "Deaths" ]
+                                       ]
                             ]
-                        , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr [ class "ladder-entry" ]))
+                        , tbody [] (lb.list |> List.indexedMap (viewEntry model.query))
                         ]
                     ]
                 ]
@@ -210,52 +215,66 @@ viewAbilityFilter query lb index ( ability, count ) =
         ]
 
 
-viewEntry : Int -> Entry -> List (Html msg)
-viewEntry index row =
-    let
-        expmeter =
-            Game.Exp.meter { level = row.charLvl, exp = row.exp }
-
-        exppct =
-            case expmeter of
-                Just ( bounds, Just exp ) ->
-                    exp.percent
-
-                _ ->
-                    1
-    in
-    -- [ td [] [ text <| Util.formatInt <| 1 + index ]
-    -- , td [] [ text row.playerUsername ]
-    [ td [] (viewClassIcon row.charClass)
-    , td []
-        [ div [] [ text row.charName ]
-        , small [ class "username" ] [ text row.playerUsername ]
+viewEntry : Route.HomeQuery -> Int -> Entry -> Html msg
+viewEntry query index row =
+    tr
+        [ classList
+            [ ( "ladder-entry", True )
+            , ( "dead", query.hc && row.died )
+            ]
         ]
+    <|
+        -- [ td [] [ text <| Util.formatInt <| 1 + index ]
+        -- , td [] [ text row.playerUsername ]
+        [ td [] (viewClassIcon row.charClass)
+        , td []
+            [ div [] [ text row.charName ]
+            , small [ class "username" ] [ text row.playerUsername ]
+            ]
 
-    -- , td [] (viewClass row.charClass)
-    , td [] [ text <| Util.formatInt row.maxWave ]
-    , td [] (row.abilities |> List.filterMap viewAbility)
-    , td [] [ text <| Util.formatInt row.charLvl ]
-    , td []
-        [ div [] [ text <| Util.formatInt row.exp ]
-        , div [ class "exp-pct" ] [ text <| Util.formatPercent exppct ]
+        -- , td [] (viewClass row.charClass)
+        , td [] [ text <| Util.formatInt row.maxWave ]
+        , td [] (row.abilities |> List.filterMap viewAbility)
+        , td [] [ text <| Util.formatInt row.charLvl ]
         ]
-    , td []
-        (case expmeter of
-            Just ( bounds, exp ) ->
-                [ meter
-                    [ class "exp"
-                    , A.max <| String.fromInt <| Basics.max 1 bounds.diff
-                    , A.value <| String.fromInt <| Maybe.Extra.unwrap bounds.diff .value exp
+            ++ (if query.enableExp then
+                    let
+                        expmeter =
+                            Game.Exp.meter { level = row.charLvl, exp = row.exp }
+
+                        exppct =
+                            case expmeter of
+                                Just ( bounds, Just exp ) ->
+                                    exp.percent
+
+                                _ ->
+                                    1
+                    in
+                    [ td []
+                        [ div [] [ text <| Util.formatInt row.exp ]
+                        , div [ class "exp-pct" ] [ text <| Util.formatPercent exppct ]
+                        ]
+                    , td []
+                        (case expmeter of
+                            Just ( bounds, exp ) ->
+                                [ meter
+                                    [ class "exp"
+                                    , A.max <| String.fromInt <| Basics.max 1 bounds.diff
+                                    , A.value <| String.fromInt <| Maybe.Extra.unwrap bounds.diff .value exp
+                                    ]
+                                    []
+                                ]
+
+                            Nothing ->
+                                []
+                        )
                     ]
-                    []
-                ]
 
-            Nothing ->
-                []
-        )
-    , td [] [ text <| Util.formatInt row.deaths ]
-    ]
+                else
+                    []
+               )
+            ++ [ td [] [ text <| Util.formatInt row.deaths ]
+               ]
 
 
 viewClassEntry : Int -> ( Result String Class, Int ) -> List (Html msg)
