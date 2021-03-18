@@ -36,6 +36,7 @@ type alias HomeQuery =
     , ssf : Bool
     , hc : Bool
     , class : Maybe String
+    , rank : Maybe String
 
     -- local filters
     , subclass : Set String
@@ -45,7 +46,7 @@ type alias HomeQuery =
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Set.empty Set.empty
+    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty
 
 
 home : Route
@@ -63,11 +64,12 @@ parser =
     P.oneOf
         [ P.map Home <|
             P.top
-                <?> Q.map6 HomeQuery
+                <?> Q.map7 HomeQuery
                         (Q.string "version")
                         (boolQueryParser "ssf")
                         (boolQueryParser "hc")
                         (Q.string "class")
+                        (Q.string "rank")
                         (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
                         (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
         , P.map Debug <| P.s "debug"
@@ -80,6 +82,7 @@ homeQueryBuilder q =
     , q.ssf |> boolQueryBuilder "ssf"
     , q.hc |> boolQueryBuilder "hc"
     , q.class |> Maybe.map (B.string "class")
+    , q.rank |> Maybe.map (B.string "rank")
     , q.subclass
         |> Set.toList
         |> List.sort

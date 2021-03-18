@@ -170,7 +170,7 @@ toLeaderboardCode req =
     , Util.ifthen req.ssf "ssf" ""
     , Util.ifthen req.hc "hardcore" "softcore"
     , req.class |> Maybe.withDefault "allclass" |> String.toLower
-    , "arenawave"
+    , req.rank |> Maybe.withDefault "arenawave"
     ]
         |> String.join ""
 
@@ -182,6 +182,7 @@ resetLocalFilters req =
         , ssf = req.ssf
         , hc = req.hc
         , class = req.class
+        , rank = req.rank
     }
 
 

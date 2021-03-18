@@ -30,6 +30,12 @@ view q =
             , ( [ text "ssf" ], True )
             ]
             |> ul []
+        , viewParamList q.rank
+            (\v -> { q | rank = v })
+            [ ( [ text "arena wave" ], Nothing )
+            , ( [ text "level" ], Just "level" )
+            ]
+            |> ul []
         , viewParamList (q.class |> Maybe.andThen (Game.Class.get >> Result.toMaybe))
             (\v -> { q | class = v |> Maybe.map .name })
             (Game.Class.list
