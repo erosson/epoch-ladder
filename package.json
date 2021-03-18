@@ -1,9 +1,9 @@
 {
-  "name": "epoch-ladder",
+  "name": "epoch-rank",
   "description": "",
   "version": "1.0.0",
   "main": "src/index.js",
-  "repository": "https://github.com/erosson/epoch-ladder",
+  "repository": "https://github.com/erosson/epoch-rank",
   "private": true,
   "scripts": {
     "start": "elm-app start",

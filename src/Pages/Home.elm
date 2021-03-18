@@ -139,7 +139,7 @@ view model =
                 [ text "Last Epoch API data (", code [] [ text code_ ], text ")" ]
             ]
         , li []
-            [ a [ target "_blank", href "https://github.com/erosson/epoch-ladder" ]
+            [ a [ target "_blank", href "https://github.com/erosson/epoch-rank" ]
                 [ text "Source code" ]
             ]
         ]
