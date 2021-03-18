@@ -6,6 +6,7 @@ module Session exposing
     , Session
     , fetchLeaderboard
     , init
+    , resetLocalFilters
     , toLeaderboard
     , toLeaderboardCode
     , toLeaderboardUrl
@@ -174,18 +175,23 @@ toLeaderboardCode req =
         |> String.join ""
 
 
+resetLocalFilters : HomeQuery -> HomeQuery
+resetLocalFilters req =
+    { homeQuery
+        | version = req.version
+        , ssf = req.ssf
+        , hc = req.hc
+        , class = req.class
+    }
+
+
 fetchLeaderboard : HomeQuery -> Session -> ( Session, Cmd Msg )
 fetchLeaderboard req0 session =
     let
         req =
             -- TODO we should really have a narrower type here - but until then,
             -- remove any possible influence the client-side filters have
-            { homeQuery
-                | version = req0.version
-                , ssf = req0.ssf
-                , hc = req0.hc
-                , class = req0.class
-            }
+            req0 |> resetLocalFilters
 
         code =
             toLeaderboardCode req

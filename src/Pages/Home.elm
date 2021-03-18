@@ -84,6 +84,12 @@ view model =
             in
             div []
                 [ div [ class "ladder-classes" ] (lb.subclasses |> List.map (viewSubclassFilter model.query lb))
+                , p []
+                    [ text "Found "
+                    , text <| String.fromInt lb.size
+                    , text " characters. "
+                    , a [ Route.href <| Route.Home <| Session.resetLocalFilters model.query ] [ text "Reset filters" ]
+                    ]
                 , div [ class "ladder-body" ]
                     [ div [ class "ability-filter" ]
                         [ table []
