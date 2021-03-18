@@ -2,6 +2,7 @@ module Pages.Home exposing (Model, Msg(..), init, subscriptions, toSession, upda
 
 import Dict exposing (Dict)
 import Game.Class exposing (Class)
+import Game.Exp
 import Game.Subclass exposing (Subclass)
 import Html as H exposing (..)
 import Html.Attributes as A exposing (..)
@@ -87,10 +88,16 @@ view model =
                 [ div [ class "ladder-classes" ] (lb.subclasses |> List.map (viewSubclassFilter model.query lb))
                 , p []
                     [ text "Found "
-                    , text <| String.fromInt lb.size
+                    , text <| Util.formatInt lb.size
                     , text " characters. "
                     , a [ Route.href <| Route.Home <| Session.resetLocalFilters model.query ] [ text "Reset filters" ]
                     ]
+                , case model.query.rank of
+                    Just "level" ->
+                        p [] [ text "WARNING: data for the \"level\" leaderboard is questionable. This data's not visible on Last Epoch's website; it's probably not production-ready." ]
+
+                    _ ->
+                        p [] []
                 , div [ class "ladder-body" ]
                     [ div [ class "ability-filter" ]
                         [ table []
@@ -107,11 +114,14 @@ view model =
                     , table []
                         [ thead []
                             [ tr []
-                                [ th [] [ text "Character" ]
-                                , th [] []
-                                , th [] [ text "Level" ]
+                                [ th [] []
+                                , th [] [ text "Character" ]
                                 , th [] [ text "Arena" ]
                                 , th [] [ text "Skills" ]
+                                , th [] [ text "Level" ]
+                                , th [] [ text "Exp" ]
+                                , th [] []
+                                , th [] [ text "Deaths" ]
                                 ]
                             ]
                         , tbody [] (lb.list |> List.indexedMap viewEntry |> List.map (tr [ class "ladder-entry" ]))
@@ -153,7 +163,7 @@ viewSubclassFilter query lb ( subclass, count ) =
         [ a [ { query | subclass = querySubclass } |> Route.Home |> Route.href ]
             [ div [] (viewClassIcon subclass)
             , small [] [ text name ]
-            , div [] [ text <| formatPercent <| toFloat count / toFloat lb.rawSize ]
+            , div [] [ text <| Util.formatPercent <| toFloat count / toFloat lb.rawSize ]
             ]
         ]
 
@@ -171,7 +181,7 @@ viewAbilityFilter query lb index ( ability, count ) =
             td [] [ a [ { query | skill = querySkill } |> Route.Home |> Route.href ] body ]
 
         percent =
-            formatPercent <| toFloat count / toFloat lb.size
+            Util.formatPercent <| toFloat count / toFloat lb.size
     in
     tr
         [ classList
@@ -179,7 +189,7 @@ viewAbilityFilter query lb index ( ability, count ) =
             , ( "selected", selected )
             ]
         ]
-        -- [ td_ [ text <| String.fromInt <| 1 + index]
+        -- [ td_ [ text <| Util.formatInt <| 1 + index]
         [ td_
             [ ability.imagePath
                 |> Maybe.map (\image -> img [ class "ability-icon", src image ] [])
@@ -200,42 +210,68 @@ viewAbilityFilter query lb index ( ability, count ) =
         ]
 
 
-formatPercent : Float -> String
-formatPercent f =
-    (f * 100 |> round |> String.fromInt) ++ "%"
-
-
 viewEntry : Int -> Entry -> List (Html msg)
 viewEntry index row =
-    -- [ td [] [ text <| String.fromInt <| 1 + index ]
+    let
+        expmeter =
+            Game.Exp.meter { level = row.charLvl, exp = row.exp }
+
+        exppct =
+            case expmeter of
+                Just ( bounds, Just exp ) ->
+                    exp.percent
+
+                _ ->
+                    1
+    in
+    -- [ td [] [ text <| Util.formatInt <| 1 + index ]
     -- , td [] [ text row.playerUsername ]
-    [ td []
+    [ td [] (viewClassIcon row.charClass)
+    , td []
         [ div [] [ text row.charName ]
         , small [ class "username" ] [ text row.playerUsername ]
         ]
 
     -- , td [] (viewClass row.charClass)
-    , td [] (viewClassIcon row.charClass)
-    , td [] [ text <| String.fromInt row.charLvl ]
-    , td [] [ text <| String.fromInt row.maxWave ]
+    , td [] [ text <| Util.formatInt row.maxWave ]
     , td [] (row.abilities |> List.filterMap viewAbility)
+    , td [] [ text <| Util.formatInt row.charLvl ]
+    , td []
+        [ div [] [ text <| Util.formatInt row.exp ]
+        , div [ class "exp-pct" ] [ text <| Util.formatPercent exppct ]
+        ]
+    , td []
+        (case expmeter of
+            Just ( bounds, exp ) ->
+                [ meter
+                    [ class "exp"
+                    , A.max <| String.fromInt <| Basics.max 1 bounds.diff
+                    , A.value <| String.fromInt <| Maybe.Extra.unwrap bounds.diff .value exp
+                    ]
+                    []
+                ]
+
+            Nothing ->
+                []
+        )
+    , td [] [ text <| Util.formatInt row.deaths ]
     ]
 
 
 viewClassEntry : Int -> ( Result String Class, Int ) -> List (Html msg)
 viewClassEntry index ( class, count ) =
-    [ td [] [ 1 + index |> String.fromInt |> text ]
+    [ td [] [ 1 + index |> Util.formatInt |> text ]
     , td [] (class |> viewClass)
-    , td [] [ count |> String.fromInt |> text ]
+    , td [] [ count |> Util.formatInt |> text ]
     ]
 
 
 viewSubclassEntry : List ( ( Ability, Result String Subclass ), Int ) -> Int -> ( Result String Subclass, Int ) -> List (Html msg)
 viewSubclassEntry abilities index ( subclass, count ) =
-    [ td [] [ 1 + index |> String.fromInt |> text ]
+    [ td [] [ 1 + index |> Util.formatInt |> text ]
     , td [] (subclass |> viewClass)
     , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
-    , td [] [ count |> String.fromInt |> text ]
+    , td [] [ count |> Util.formatInt |> text ]
     , td []
         [ details []
             [ summary [] [ text "abilities" ]
@@ -252,7 +288,7 @@ viewSubclassEntry abilities index ( subclass, count ) =
 
 viewAbilityEntry : Int -> ( ( Ability, Result String Subclass ), Int ) -> List (Html msg)
 viewAbilityEntry index ( ( ability, subclass ), count ) =
-    [ td [] [ text <| String.fromInt <| 1 + index ]
+    [ td [] [ text <| Util.formatInt <| 1 + index ]
     , td []
         (case ability.imagePath of
             Nothing ->
@@ -270,7 +306,7 @@ viewAbilityEntry index ( ( ability, subclass ), count ) =
         ]
     , td [] (subclass |> viewClass)
     , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
-    , td [] [ text <| String.fromInt count ]
+    , td [] [ text <| Util.formatInt count ]
     ]
 
 

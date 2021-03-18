@@ -30,12 +30,18 @@ view q =
             , ( [ text "ssf" ], True )
             ]
             |> ul []
-        , viewParamList q.rank
-            (\v -> { q | rank = v })
-            [ ( [ text "arena wave" ], Nothing )
-            , ( [ text "level" ], Just "level" )
-            ]
-            |> ul []
+        , case q.rank of
+            -- the "level" leaderboard clearly isn't production-ready, so let's keep it hidden unless they know it's there
+            Just _ ->
+                viewParamList q.rank
+                    (\v -> { q | rank = v })
+                    [ ( [ text "arena wave" ], Nothing )
+                    , ( [ text "level" ], Just "level" )
+                    ]
+                    |> ul []
+
+            Nothing ->
+                span [] []
         , viewParamList (q.class |> Maybe.andThen (Game.Class.get >> Result.toMaybe))
             (\v -> { q | class = v |> Maybe.map .name })
             (Game.Class.list

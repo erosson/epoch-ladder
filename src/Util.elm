@@ -1,5 +1,8 @@
 module Util exposing (..)
 
+import FormatNumber
+import FormatNumber.Locales exposing (usLocale)
+
 
 unwrapResult : (err -> a) -> (ok -> a) -> Result err ok -> a
 unwrapResult fromErr fromOk res =
@@ -28,3 +31,18 @@ ifthenfn pred t f val =
 
     else
         f val
+
+
+formatPercent : Float -> String
+formatPercent f =
+    (f * 100 |> round |> formatInt) ++ "%"
+
+
+formatFloat : Float -> String
+formatFloat =
+    FormatNumber.format usLocale
+
+
+formatInt : Int -> String
+formatInt =
+    toFloat >> FormatNumber.format { usLocale | decimals = FormatNumber.Locales.Exact 0 }

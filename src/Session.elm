@@ -54,6 +54,8 @@ type alias Entry =
     , charName : String
     , charClass : Result String Subclass
     , charLvl : Int
+    , exp : Int
+    , deaths : Int
     , maxWave : Int
     , abilities : List Ability
     , abilitySet : Set String
@@ -244,11 +246,13 @@ leaderboardResultDecoder =
 
 decodeData : D.Decoder (List Entry)
 decodeData =
-    D.map5 Entry
+    D.map7 Entry
         (D.field "player_username" D.string)
         (D.field "char_name" D.string)
         (D.field "char_class" <| D.map Game.Subclass.get D.string)
         (D.field "char_lvl" decodeIntString)
+        (D.field "exp" decodeIntString)
+        (D.field "deaths" D.int)
         (D.field "max_wave" decodeIntString)
         |> D.andThen
             (\entry ->

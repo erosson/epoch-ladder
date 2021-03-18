@@ -91,7 +91,11 @@ img.class-icon {
 meter {
   width: 100%;
 }
-.username {
+.username,
+.exp-pct {
   color: grey;
   font-size: 70%;
+}
+meter.exp {
+  width: 5em;
 }
