@@ -205,7 +205,7 @@ fetchLeaderboard req0 session =
                 |> Dict.get code
                 |> Maybe.withDefault { req = req, res = RemoteData.NotAsked }
     in
-    case board.res |> Debug.log "res" of
+    case board.res of
         -- set this leaderboard to loading, unless success or already-loading
         RemoteData.Loading ->
             ( session, Cmd.none )
