@@ -61,7 +61,7 @@ view model =
         code_ =
             Session.toLeaderboardCode model.query
     in
-    [ h1 [] [ a [ Route.href Route.home ] [ text "Epoch Ladder" ] ]
+    [ h1 [] [ a [ Route.href Route.home ] [ text "Epoch Rank" ] ]
     , p []
         [ text "An alternative view of "
         , a [ target "_blank", href "https://lastepoch.com/ladder" ] [ text "Last Epoch's ladder" ]
