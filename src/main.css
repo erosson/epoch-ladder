@@ -102,3 +102,6 @@ meter.exp {
 .ladder-entry.dead {
   opacity: 0.5;
 }
+td.num {
+  text-align: right;
+}

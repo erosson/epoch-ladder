@@ -104,17 +104,19 @@ view model =
                             [ thead []
                                 [ tr []
                                     [ th [] []
+                                    , th [] []
                                     , th [] [ text "Skill" ]
                                     , th [] []
                                     ]
                                 ]
-                            , tbody [] (lb.abilities |> List.indexedMap (viewAbilityFilter model.query lb))
+                            , tbody [] (lb.abilities |> List.map (viewAbilityFilter model.query lb))
                             ]
                         ]
                     , table []
                         [ thead []
                             [ tr [] <|
                                 [ th [] []
+                                , th [] []
                                 , th [] [ text "Character" ]
                                 , th [] [ text "Arena" ]
                                 , th [] [ text "Skills" ]
@@ -129,7 +131,7 @@ view model =
                                     ++ [ th [] [ text "Deaths" ]
                                        ]
                             ]
-                        , tbody [] (lb.list |> List.indexedMap (viewEntry model.query))
+                        , tbody [] (lb.rankedList |> List.map (viewEntry model.query))
                         ]
                     ]
                 ]
@@ -173,8 +175,8 @@ viewSubclassFilter query lb ( subclass, count ) =
         ]
 
 
-viewAbilityFilter : Route.HomeQuery -> Leaderboard -> Int -> ( Ability, Int ) -> Html msg
-viewAbilityFilter query lb index ( ability, count ) =
+viewAbilityFilter : Route.HomeQuery -> Leaderboard -> ( Ability, Int ) -> Html msg
+viewAbilityFilter query lb ( ability, count ) =
     let
         selected =
             Set.member ability.name query.skill
@@ -194,7 +196,7 @@ viewAbilityFilter query lb index ( ability, count ) =
             , ( "selected", selected )
             ]
         ]
-        -- [ td_ [ text <| Util.formatInt <| 1 + index]
+        -- [ td_ [ text <| Util.formatInt <| 1 + index ]
         [ td_
             [ ability.imagePath
                 |> Maybe.map (\image -> img [ class "ability-icon", src image ] [])
@@ -215,8 +217,8 @@ viewAbilityFilter query lb index ( ability, count ) =
         ]
 
 
-viewEntry : Route.HomeQuery -> Int -> Entry -> Html msg
-viewEntry query index row =
+viewEntry : Route.HomeQuery -> ( Int, Entry ) -> Html msg
+viewEntry query ( index, row ) =
     tr
         [ classList
             [ ( "ladder-entry", True )
@@ -224,18 +226,19 @@ viewEntry query index row =
             ]
         ]
     <|
-        -- [ td [] [ text <| Util.formatInt <| 1 + index ]
+        [ td [ class "num" ] [ text <| Util.formatInt <| 1 + index, text ")" ]
+
         -- , td [] [ text row.playerUsername ]
-        [ td [] (viewClassIcon row.charClass)
+        , td [] (viewClassIcon row.charClass)
         , td []
             [ div [] [ text row.charName ]
             , small [ class "username" ] [ text row.playerUsername ]
             ]
 
         -- , td [] (viewClass row.charClass)
-        , td [] [ text <| Util.formatInt row.maxWave ]
+        , td [ class "num" ] [ text <| Util.formatInt row.maxWave ]
         , td [] (row.abilities |> List.filterMap viewAbility)
-        , td [] [ text <| Util.formatInt row.charLvl ]
+        , td [ class "num" ] [ text <| Util.formatInt row.charLvl ]
         ]
             ++ (if query.enableExp then
                     let
@@ -250,7 +253,7 @@ viewEntry query index row =
                                 _ ->
                                     1
                     in
-                    [ td []
+                    [ td [ class "num" ]
                         [ div [] [ text <| Util.formatInt row.exp ]
                         , div [ class "exp-pct" ] [ text <| Util.formatPercent exppct ]
                         ]
@@ -273,70 +276,8 @@ viewEntry query index row =
                 else
                     []
                )
-            ++ [ td [] [ text <| Util.formatInt row.deaths ]
+            ++ [ td [ class "num" ] [ text <| Util.formatInt row.deaths ]
                ]
-
-
-viewClassEntry : Int -> ( Result String Class, Int ) -> List (Html msg)
-viewClassEntry index ( class, count ) =
-    [ td [] [ 1 + index |> Util.formatInt |> text ]
-    , td [] (class |> viewClass)
-    , td [] [ count |> Util.formatInt |> text ]
-    ]
-
-
-viewSubclassEntry : List ( ( Ability, Result String Subclass ), Int ) -> Int -> ( Result String Subclass, Int ) -> List (Html msg)
-viewSubclassEntry abilities index ( subclass, count ) =
-    [ td [] [ 1 + index |> Util.formatInt |> text ]
-    , td [] (subclass |> viewClass)
-    , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
-    , td [] [ count |> Util.formatInt |> text ]
-    , td []
-        [ details []
-            [ summary [] [ text "abilities" ]
-            , table []
-                (abilities
-                    |> List.filter (\( ( a, s ), c ) -> s == subclass)
-                    |> List.indexedMap viewAbilityEntry
-                    |> List.map (tr [])
-                )
-            ]
-        ]
-    ]
-
-
-viewAbilityEntry : Int -> ( ( Ability, Result String Subclass ), Int ) -> List (Html msg)
-viewAbilityEntry index ( ( ability, subclass ), count ) =
-    [ td [] [ text <| Util.formatInt <| 1 + index ]
-    , td []
-        (case ability.imagePath of
-            Nothing ->
-                []
-
-            Just imagePath ->
-                [ img [ class "ability-icon", src imagePath ] [] ]
-        )
-    , td []
-        [ if ability.name == "" then
-            i [] [ text "(empty)" ]
-
-          else
-            text ability.name
-        ]
-    , td [] (subclass |> viewClass)
-    , td [] (subclass |> Result.mapError (always "???") |> Result.map .class |> viewClass)
-    , td [] [ text <| Util.formatInt count ]
-    ]
-
-
-viewClass : Result String { c | image : String, name : String } -> List (Html msg)
-viewClass res =
-    case res of
-        Ok cls ->
-            [ img [ class "class-icon", src cls.image ] [], text cls.name ]
-
-        Err name ->
-            [ text name ]
 
 
 viewClassIcon : Result String { c | image : String, name : String } -> List (Html msg)
