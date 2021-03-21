@@ -45,4 +45,6 @@ formatFloat =
 
 formatInt : Int -> String
 formatInt =
-    toFloat >> FormatNumber.format { usLocale | decimals = FormatNumber.Locales.Exact 0 }
+    toFloat
+        >> FormatNumber.format { usLocale | decimals = FormatNumber.Locales.Exact 0 }
+        >> ifthenfn ((==) "") (always "0") identity

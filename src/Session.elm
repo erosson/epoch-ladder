@@ -45,7 +45,7 @@ type alias Leaderboard =
     , subclasses : List ( Result String Subclass, Int )
     , classes : List ( Result String Class, Int )
     , abilityClasses : List ( ( Ability, Result String Subclass ), Int )
-    , abilities : List ( Ability, Int )
+    , abilities : List (Result String ( Ability, Int ))
     }
 
 
@@ -132,6 +132,30 @@ toLeaderboard filter rawList =
 
         filteredList =
             rankedFilteredList |> List.map Tuple.second
+
+        abilities0 : List ( Ability, Int )
+        abilities0 =
+            filteredList
+                |> List.concatMap .abilities
+                |> List.filter (\a -> a.name /= "")
+                |> popularity .name []
+
+        abilitySet : Set String
+        abilitySet =
+            abilities0
+                |> List.map (Tuple.first >> .name)
+                |> Set.fromList
+
+        -- old bug: filter for an ability + a class without that ability
+        -- = can't unfilter the ability because, with no possible entries, it's
+        -- not in the list. To fix that, we force all filtered abilities to
+        -- appear in the ability list. Trouble is, we won't always have complete
+        -- information for those missing abilities, hence the Result type - Err
+        -- is just the ability name.
+        abilities : List (Result String ( Ability, Int ))
+        abilities =
+            (abilities0 |> List.map Ok)
+                ++ (Set.diff filter.skill abilitySet |> Set.toList |> List.map Err)
     in
     { list = filteredList
     , rankedList = rankedFilteredList
@@ -154,11 +178,7 @@ toLeaderboard filter rawList =
                     |> List.filter (\c -> filter.class == Nothing || Just c.name == filter.class)
                     |> List.map Ok
                 )
-    , abilities =
-        filteredList
-            |> List.concatMap .abilities
-            |> List.filter (\a -> a.name /= "")
-            |> popularity .name []
+    , abilities = abilities
     , abilityClasses =
         filteredList
             |> List.concatMap (\e -> e.abilities |> List.map (\a -> ( a, e.charClass )))

@@ -104,7 +104,6 @@ view model =
                             [ thead []
                                 [ tr []
                                     [ th [] []
-                                    , th [] []
                                     , th [] [ text "Skill" ]
                                     , th [] []
                                     ]
@@ -175,14 +174,33 @@ viewSubclassFilter query lb ( subclass, count ) =
         ]
 
 
-viewAbilityFilter : Route.HomeQuery -> Leaderboard -> ( Ability, Int ) -> Html msg
-viewAbilityFilter query lb ( ability, count ) =
+viewAbilityFilter : Route.HomeQuery -> Leaderboard -> Result String ( Ability, Int ) -> Html msg
+viewAbilityFilter query lb abil =
+    -- old bug: filter for an ability + a class without that ability
+    -- = can't unfilter the ability because, with no possible entries, it's
+    -- not in the list. To fix that, we force all filtered abilities to
+    -- appear in the ability list. Trouble is, we won't always have complete
+    -- information for those missing abilities, hence the Result type - Err
+    -- is just the ability name.
     let
+        name =
+            case abil of
+                Err n ->
+                    n
+
+                Ok ( a, _ ) ->
+                    a.name
+
+        ( ability, count ) =
+            abil
+                |> Result.map (Tuple.mapFirst Just)
+                |> Result.withDefault ( Nothing, 0 )
+
         selected =
-            Set.member ability.name query.skill
+            Set.member name query.skill
 
         querySkill =
-            Util.ifthen selected (Set.remove ability.name query.skill) (Set.insert ability.name query.skill)
+            Util.ifthen selected (Set.remove name query.skill) (Set.insert name query.skill)
 
         td_ body =
             td [] [ a [ { query | skill = querySkill } |> Route.Home |> Route.href ] body ]
@@ -198,13 +216,14 @@ viewAbilityFilter query lb ( ability, count ) =
         ]
         -- [ td_ [ text <| Util.formatInt <| 1 + index ]
         [ td_
-            [ ability.imagePath
+            [ ability
+                |> Maybe.andThen .imagePath
                 |> Maybe.map (\image -> img [ class "ability-icon", src image ] [])
                 |> Maybe.withDefault (span [] [])
             ]
         , td_
             [ div []
-                [ text ability.name
+                [ text name
                 , span [ class "percent" ] [ text percent ]
                 ]
             , meter
