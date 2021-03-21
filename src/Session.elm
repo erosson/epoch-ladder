@@ -45,7 +45,7 @@ type alias Leaderboard =
     , subclasses : List ( Result String Subclass, Int )
     , classes : List ( Result String Class, Int )
     , abilityClasses : List ( ( Ability, Result String Subclass ), Int )
-    , abilities : List (Result String ( Ability, Int ))
+    , abilities : List ( Ability, Int )
     }
 
 
@@ -64,7 +64,19 @@ type alias Entry =
 
 
 type alias Ability =
-    { name : String, imagePath : Maybe String }
+    { name : String
+
+    -- for a few abilities, the api only returns the name
+    , details : Maybe AbilityDetails
+    }
+
+
+type alias AbilityDetails =
+    { imagePath : String
+    , description : String
+    , tags : String
+    , cost : Int
+    }
 
 
 type Msg
@@ -149,13 +161,14 @@ toLeaderboard filter rawList =
         -- old bug: filter for an ability + a class without that ability
         -- = can't unfilter the ability because, with no possible entries, it's
         -- not in the list. To fix that, we force all filtered abilities to
-        -- appear in the ability list. Trouble is, we won't always have complete
-        -- information for those missing abilities, hence the Result type - Err
-        -- is just the ability name.
-        abilities : List (Result String ( Ability, Int ))
+        -- appear in the ability list.
+        abilities : List ( Ability, Int )
         abilities =
-            (abilities0 |> List.map Ok)
-                ++ (Set.diff filter.skill abilitySet |> Set.toList |> List.map Err)
+            abilities0
+                ++ (Set.diff filter.skill abilitySet
+                        |> Set.toList
+                        |> List.map (\name -> ( Ability name Nothing, 0 ))
+                   )
     in
     { list = filteredList
     , rankedList = rankedFilteredList
@@ -310,4 +323,10 @@ decodeAbility : String -> D.Decoder Ability
 decodeAbility n =
     D.map2 Ability
         (D.field ("abilityName_" ++ n) D.string)
-        (D.maybe <| D.field ("abilityImagePath_" ++ n) D.string)
+        (D.maybe <|
+            D.map4 AbilityDetails
+                (D.field ("abilityImagePath_" ++ n) D.string)
+                (D.field ("abilityDescription_" ++ n) D.string)
+                (D.field ("abilityTags_" ++ n) D.string)
+                (D.field ("abilityCost_" ++ n) decodeIntString)
+        )

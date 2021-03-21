@@ -76,8 +76,17 @@ view model =
             text "loading..."
 
         RemoteData.Failure err ->
-            -- code [] [ text <| Debug.toString err ]
-            code [] [ text "error fetching leaderboard" ]
+            div []
+                [ text <|
+                    if Util.isTransientHttpError err then
+                        "Error fetching leaderboard. Looks like a temporary error - try refreshing the page."
+
+                    else
+                        "Error fetching leaderboard. Looks like this is a bug in Epoch-Rank - please report this! https://github.com/erosson/epoch-rank/issues"
+                , hr [] []
+                , pre [] [ text <| Util.httpErrorToString err ]
+                , hr [] []
+                ]
 
         RemoteData.Success lb0 ->
             let
@@ -174,33 +183,14 @@ viewSubclassFilter query lb ( subclass, count ) =
         ]
 
 
-viewAbilityFilter : Route.HomeQuery -> Leaderboard -> Result String ( Ability, Int ) -> Html msg
-viewAbilityFilter query lb abil =
-    -- old bug: filter for an ability + a class without that ability
-    -- = can't unfilter the ability because, with no possible entries, it's
-    -- not in the list. To fix that, we force all filtered abilities to
-    -- appear in the ability list. Trouble is, we won't always have complete
-    -- information for those missing abilities, hence the Result type - Err
-    -- is just the ability name.
+viewAbilityFilter : Route.HomeQuery -> Leaderboard -> ( Ability, Int ) -> Html msg
+viewAbilityFilter query lb ( ability, count ) =
     let
-        name =
-            case abil of
-                Err n ->
-                    n
-
-                Ok ( a, _ ) ->
-                    a.name
-
-        ( ability, count ) =
-            abil
-                |> Result.map (Tuple.mapFirst Just)
-                |> Result.withDefault ( Nothing, 0 )
-
         selected =
-            Set.member name query.skill
+            Set.member ability.name query.skill
 
         querySkill =
-            Util.ifthen selected (Set.remove name query.skill) (Set.insert name query.skill)
+            Util.ifthen selected (Set.remove ability.name query.skill) (Set.insert ability.name query.skill)
 
         td_ body =
             td [] [ a [ { query | skill = querySkill } |> Route.Home |> Route.href ] body ]
@@ -216,14 +206,13 @@ viewAbilityFilter query lb abil =
         ]
         -- [ td_ [ text <| Util.formatInt <| 1 + index ]
         [ td_
-            [ ability
-                |> Maybe.andThen .imagePath
-                |> Maybe.map (\image -> img [ class "ability-icon", src image ] [])
+            [ ability.details
+                |> Maybe.map (\a -> img [ class "ability-icon", src a.imagePath ] [])
                 |> Maybe.withDefault (span [] [])
             ]
         , td_
             [ div []
-                [ text name
+                [ text ability.name
                 , span [ class "percent" ] [ text percent ]
                 ]
             , meter
@@ -310,9 +299,9 @@ viewClassIcon res =
 
 
 viewAbility : Ability -> Maybe (Html msg)
-viewAbility a =
-    a.imagePath
+viewAbility ability =
+    ability.details
         |> Maybe.map
-            (\imagePath ->
-                img [ class "ability-icon", title a.name, src imagePath ] []
+            (\a ->
+                img [ class "ability-icon", title ability.name, src a.imagePath ] []
             )
