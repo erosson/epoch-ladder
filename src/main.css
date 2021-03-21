@@ -62,6 +62,12 @@ img.class-icon {
   border-radius: 1em;
   margin: 0;
 }
+span.ability-icon {
+  /* for missing ability details */
+  display: inline-block;
+  width: 2em;
+  height: 2em;
+}
 .class-filter-entry {
   text-align: center;
 }
@@ -104,4 +110,26 @@ meter.exp {
 }
 td.num {
   text-align: right;
+}
+
+/* https://www.w3schools.com/css/css_tooltip.asp */
+.tooltip {
+  display: inline-block;
+  position: relative;
+}
+.tooltip .tooltip-body {
+  visibility: hidden;
+  position: absolute;
+  z-index: 1;
+
+  top: 2em;
+  left: 2em;
+  padding: 0.5em;
+  background-color: black;
+  width: 20em;
+  border: 1px solid grey;
+  border-radius: 0.5em;
+}
+.tooltip:hover .tooltip-body {
+  visibility: visible;
 }

@@ -192,8 +192,9 @@ viewAbilityFilter query lb ( ability, count ) =
         querySkill =
             Util.ifthen selected (Set.remove ability.name query.skill) (Set.insert ability.name query.skill)
 
-        td_ body =
-            td [] [ a [ { query | skill = querySkill } |> Route.Home |> Route.href ] body ]
+        href : List (Html msg) -> Html msg
+        href =
+            a [ { query | skill = querySkill } |> Route.Home |> Route.href ]
 
         percent =
             Util.formatPercent <| toFloat count / toFloat lb.size
@@ -205,22 +206,28 @@ viewAbilityFilter query lb ( ability, count ) =
             ]
         ]
         -- [ td_ [ text <| Util.formatInt <| 1 + index ]
-        [ td_
-            [ ability.details
-                |> Maybe.map (\a -> img [ class "ability-icon", src a.imagePath ] [])
-                |> Maybe.withDefault (span [] [])
+        [ td []
+            [ viewAbilityTooltip ability <|
+                case ability.details of
+                    Just a ->
+                        [ href [ img [ class "ability-icon", src a.imagePath ] [] ] ]
+
+                    Nothing ->
+                        [ href [ span [ class "ability-icon" ] [] ] ]
             ]
-        , td_
-            [ div []
-                [ text ability.name
-                , span [ class "percent" ] [ text percent ]
+        , td []
+            [ href
+                [ div []
+                    [ text ability.name
+                    , span [ class "percent" ] [ text percent ]
+                    ]
+                , meter
+                    [ A.max <| String.fromInt lb.size
+                    , A.value <| String.fromInt count
+                    , title percent
+                    ]
+                    []
                 ]
-            , meter
-                [ A.max <| String.fromInt lb.size
-                , A.value <| String.fromInt count
-                , title percent
-                ]
-                []
             ]
         ]
 
@@ -245,7 +252,7 @@ viewEntry query ( index, row ) =
 
         -- , td [] (viewClass row.charClass)
         , td [ class "num" ] [ text <| Util.formatInt row.maxWave ]
-        , td [] (row.abilities |> List.filterMap viewAbility)
+        , td [] (row.abilities |> List.map viewAbilityIcon)
         , td [ class "num" ] [ text <| Util.formatInt row.charLvl ]
         ]
             ++ (if query.enableExp then
@@ -298,10 +305,36 @@ viewClassIcon res =
             [ text name ]
 
 
-viewAbility : Ability -> Maybe (Html msg)
-viewAbility ability =
-    ability.details
-        |> Maybe.map
-            (\a ->
-                img [ class "ability-icon", title ability.name, src a.imagePath ] []
-            )
+viewAbilityIcon : Ability -> Html msg
+viewAbilityIcon ability =
+    viewAbilityTooltip ability <|
+        case ability.details of
+            Just a ->
+                [ img [ class "ability-icon", src a.imagePath ] [] ]
+
+            Nothing ->
+                [ span [ class "ability-icon" ] [] ]
+
+
+viewAbilityTooltip : Ability -> List (Html msg) -> Html msg
+viewAbilityTooltip ability body =
+    case ability.details of
+        Just a ->
+            span [ class "tooltip" ] <|
+                body
+                    ++ [ span [ class "tooltip-body" ]
+                            [ div [] [ b [] [ text ability.name ] ]
+                            , p [ class "ability-cost" ]
+                                [ text "Skill cost: "
+                                , text <| Util.formatInt a.cost
+                                ]
+                            , p [] [ text a.description ]
+                            , div [] [ text a.tags ]
+                            ]
+                       ]
+
+        Nothing ->
+            span [ class "tooltip" ] <|
+                body
+                    ++ [ span [ class "tooltip-body" ] [ div [] [ b [] [ text ability.name ] ] ]
+                       ]
