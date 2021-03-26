@@ -41,6 +41,8 @@ type alias HomeQuery =
     -- local filters
     , subclass : Set String
     , skill : Set String
+    , searchName : String
+    , searchSkill : String
 
     -- feature switches. TODO: these should be in a separate record if we add more pages
     , enableExp : Bool
@@ -49,7 +51,7 @@ type alias HomeQuery =
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty False
+    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty "" "" False
 
 
 home : Route
@@ -62,20 +64,30 @@ parse =
     P.parse parser
 
 
+qapply : Q.Parser a -> Q.Parser (a -> b) -> Q.Parser b
+qapply a fn =
+    -- https://package.elm-lang.org/packages/elm/url/latest/Url-Parser-Query#map8
+    -- why isn't this built in?
+    Q.map2 (\fn_ a_ -> fn_ a_) fn a
+
+
 parser : Parser (Route -> a) a
 parser =
     P.oneOf
-        [ P.map Home <|
-            P.top
-                <?> Q.map8 HomeQuery
-                        (Q.string "version")
-                        (boolQueryParser "ssf")
-                        (boolQueryParser "hc")
-                        (Q.string "class")
-                        (Q.string "rank")
-                        (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
-                        (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
-                        (boolQueryParser "enableExp")
+        [ P.map Home
+            (P.top
+                <?> (Q.map HomeQuery (Q.string "version")
+                        |> qapply (boolQueryParser "ssf")
+                        |> qapply (boolQueryParser "hc")
+                        |> qapply (Q.string "class")
+                        |> qapply (Q.string "rank")
+                        |> qapply (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
+                        |> qapply (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
+                        |> qapply (Q.string "qname" |> Q.map (Maybe.withDefault ""))
+                        |> qapply (Q.string "qskill" |> Q.map (Maybe.withDefault ""))
+                        |> qapply (boolQueryParser "enableExp")
+                    )
+            )
         , P.map Debug <| P.s "debug"
         ]
 
@@ -99,6 +111,12 @@ homeQueryBuilder q =
         |> String.join ","
         |> Util.ifthenfn ((==) "") (always Nothing) Just
         |> Maybe.map (B.string "skill")
+    , q.searchName
+        |> Util.ifthenfn ((==) "") (always Nothing) Just
+        |> Maybe.map (B.string "qname")
+    , q.searchSkill
+        |> Util.ifthenfn ((==) "") (always Nothing) Just
+        |> Maybe.map (B.string "qskill")
     , q.enableExp |> boolQueryBuilder "enableExp"
     ]
         |> List.filterMap identity

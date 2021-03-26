@@ -25,6 +25,8 @@ type alias Model =
 
 type Msg
     = SessionMsg Session.Msg
+    | InputSearchName String
+    | InputSearchSkill String
 
 
 init : Route.HomeQuery -> Session -> ( Model, Cmd Msg )
@@ -44,10 +46,16 @@ toSession m =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg ({ session } as model) =
+update msg ({ session, query } as model) =
     case msg of
         SessionMsg submsg ->
             ( { model | session = session |> Session.update submsg }, Cmd.none )
+
+        InputSearchName s ->
+            ( { model | query = { query | searchName = s } }, Cmd.none )
+
+        InputSearchSkill s ->
+            ( { model | query = { query | searchSkill = s } }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -122,6 +130,11 @@ view model =
                                     , th [] [ text "Skill" ]
                                     , th [] []
                                     ]
+                                , tr []
+                                    [ th [] []
+                                    , th [] [ input [ value model.query.searchSkill, onInput InputSearchSkill ] [] ]
+                                    , th [] []
+                                    ]
                                 ]
                             , tbody [] (lb.abilities |> List.map (viewAbilityFilter model.query lb))
                             ]
@@ -144,6 +157,11 @@ view model =
                                        )
                                     ++ [ th [] [ text "Deaths" ]
                                        ]
+                            , tr [] <|
+                                [ th [] []
+                                , th [] []
+                                , th [] [ input [ value model.query.searchName, onInput InputSearchName ] [] ]
+                                ]
                             ]
                         , tbody [] (lb.rankedList |> List.map (viewEntry model.query))
                         ]

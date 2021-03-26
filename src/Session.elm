@@ -105,28 +105,29 @@ update msg session =
             }
 
 
+popularity : (a -> comparable) -> List a -> List a -> List ( a, Int )
+popularity toKey all votes =
+    let
+        counts =
+            votes
+                |> List.Extra.gatherEquals
+                |> List.map (Tuple.mapSecond (List.length >> (+) 1))
+                |> List.sortBy Tuple.second
+                |> List.reverse
+
+        counted : Set comparable
+        counted =
+            counts |> List.map (Tuple.first >> toKey) |> Set.fromList
+
+        uncounted =
+            all |> List.filter (\e -> Set.member (toKey e) counted |> not)
+    in
+    counts ++ List.map (\e -> ( e, 0 )) uncounted
+
+
 toLeaderboard : HomeQuery -> List Entry -> Leaderboard
 toLeaderboard filter rawList =
     let
-        popularity : (a -> comparable) -> List a -> List a -> List ( a, Int )
-        popularity toKey all votes =
-            let
-                counts =
-                    votes
-                        |> List.Extra.gatherEquals
-                        |> List.map (Tuple.mapSecond (List.length >> (+) 1))
-                        |> List.sortBy Tuple.second
-                        |> List.reverse
-
-                counted : Set comparable
-                counted =
-                    counts |> List.map (Tuple.first >> toKey) |> Set.fromList
-
-                uncounted =
-                    all |> List.filter (\e -> Set.member (toKey e) counted |> not)
-            in
-            counts ++ List.map (\e -> ( e, 0 )) uncounted
-
         rankedList =
             rawList |> List.indexedMap Tuple.pair
 
@@ -136,8 +137,17 @@ toLeaderboard filter rawList =
                     (Tuple.second
                         >> (\entry ->
                                 List.all identity
+                                    -- subclass filter buttons
                                     [ Set.isEmpty filter.subclass || Set.member (Util.unwrapResult identity .name entry.charClass) filter.subclass
+
+                                    -- skill filter buttons
                                     , Set.diff filter.skill entry.abilitySet |> Set.isEmpty
+
+                                    -- charname+username search
+                                    , List.any (String.toLower >> String.contains (String.toLower filter.searchName))
+                                        [ entry.charName, entry.playerUsername ]
+
+                                    -- skill-name search is below; it doesn't affect character entries, only skills
                                     ]
                            )
                     )
@@ -150,6 +160,8 @@ toLeaderboard filter rawList =
             filteredList
                 |> List.concatMap .abilities
                 |> List.filter (\a -> a.name /= "")
+                -- skill name search
+                |> List.filter (\a -> String.contains (String.toLower filter.searchSkill) (String.toLower a.name))
                 |> popularity .name []
 
         abilitySet : Set String
