@@ -179,12 +179,18 @@ viewSubclassFilter query lb ( subclass, count ) =
         [ classList
             [ ( "class-filter-entry", True )
             , ( "selected", selected )
+            , ( "empty", count <= 0 )
             ]
         ]
         [ a [ { query | subclass = querySubclass } |> Route.Home |> Route.href ]
-            [ div [] (viewClassIcon subclass)
-            , small [] [ text name ]
-            , div [] [ text <| Util.formatPercent <| toFloat count / toFloat lb.rawSize ]
+            [ div [ class "label" ] [ text name ]
+            , div [] (viewClassIcon subclass)
+            , div [ class "pct" ] [ text <| Util.formatPercent <| toFloat count / toFloat lb.rawSize ]
+            , meter
+                [ A.value <| String.fromInt count
+                , A.max <| String.fromInt lb.rawSize
+                ]
+                []
             ]
         ]
 

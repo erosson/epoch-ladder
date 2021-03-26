@@ -70,15 +70,34 @@ span.ability-icon {
 }
 .class-filter-entry {
   text-align: center;
+  border: 0.15em solid #222;
+  border-radius: 0.5em;
+  margin: 0.1em;
+  width: 4em;
+  position: relative;
 }
 .class-filter-entry.selected {
   border: 0.15em solid #660;
-  border-radius: 0.5em;
   background: #330;
 }
 .class-filter-entry img.class-icon {
   height: 4em;
   border-radius: 1em;
+}
+.class-filter-entry .label {
+  font-size: 80%;
+  overflow: hidden;
+  white-space: nowrap;
+  /* text-overflow: ellipsis; */
+}
+.class-filter-entry .pct {
+  font-size: 80%;
+  position: absolute;
+  bottom: 1em;
+  right: 0;
+}
+.class-filter-entry.empty {
+  filter: grayscale();
 }
 .ability-filter table {
   /* padding-left: 0; */
