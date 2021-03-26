@@ -76,13 +76,19 @@ view model =
             text "loading..."
 
         RemoteData.Failure err ->
-            div []
-                [ text <|
+            div [ class "error" ]
+                [ span [] <|
                     if Util.isTransientHttpError err then
-                        "Error fetching leaderboard. Looks like a temporary error - try refreshing the page."
+                        [ text "Error fetching leaderboard. Looks like a temporary error - try refreshing the page." ]
 
                     else
-                        "Error fetching leaderboard. Looks like this is a bug in Epoch-Rank - please report this! https://github.com/erosson/epoch-rank/issues"
+                        let
+                            url =
+                                "https://github.com/erosson/epoch-rank/issues"
+                        in
+                        [ text "Error fetching leaderboard. This might be a bug in Epoch-Rank, consider reporting it: "
+                        , a [ target "_blank", href url ] [ text url ]
+                        ]
                 , hr [] []
                 , pre [] [ text <| Util.httpErrorToString err ]
                 , hr [] []

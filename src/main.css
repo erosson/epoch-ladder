@@ -133,3 +133,6 @@ td.num {
 .tooltip:hover .tooltip-body {
   visibility: visible;
 }
+.error {
+  color: red;
+}
