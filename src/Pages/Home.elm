@@ -358,7 +358,7 @@ viewAbilityTooltip ability body =
                                 [ text "Skill cost: "
                                 , text <| Util.formatInt a.cost
                                 ]
-                            , p [] [ text a.description ]
+                            , div [] (a |> Session.description |> List.map (\d -> p [] [ text d ]))
                             , div [] [ text a.tags ]
                             ]
                        ]

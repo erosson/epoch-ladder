@@ -4,6 +4,7 @@ module Session exposing
     , Leaderboard
     , Msg(..)
     , Session
+    , description
     , fetchLeaderboard
     , init
     , resetLocalFilters
@@ -73,7 +74,7 @@ type alias Ability =
 
 type alias AbilityDetails =
     { imagePath : String
-    , description : String
+    , rawDescription : String
     , tags : String
     , cost : Int
     }
@@ -81,6 +82,12 @@ type alias AbilityDetails =
 
 type Msg
     = HttpGetLeaderBoard HomeQuery (Result Http.Error (List Entry))
+
+
+description : AbilityDetails -> List String
+description =
+    -- multi-line descriptions. For example, sentinel's vengeance
+    .rawDescription >> String.split "\\n" >> List.filter ((/=) "")
 
 
 init : Maybe Nav.Key -> Session
