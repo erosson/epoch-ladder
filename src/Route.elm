@@ -41,7 +41,8 @@ type alias HomeQuery =
     -- local filters
     , subclass : Set String
     , skill : Set String
-    , searchName : String
+    , searchAccount : String
+    , searchChar : String
     , searchSkill : String
 
     -- feature switches. TODO: these should be in a separate record if we add more pages
@@ -51,7 +52,7 @@ type alias HomeQuery =
 
 homeQuery : HomeQuery
 homeQuery =
-    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty "" "" False
+    HomeQuery Nothing False False Nothing Nothing Set.empty Set.empty "" "" "" False
 
 
 home : Route
@@ -83,8 +84,9 @@ parser =
                         |> qapply (Q.string "rank")
                         |> qapply (Q.string "subclass" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
                         |> qapply (Q.string "skill" |> Q.map (Maybe.Extra.unwrap Set.empty (String.split "," >> Set.fromList)))
-                        |> qapply (Q.string "qname" |> Q.map (Maybe.withDefault ""))
-                        |> qapply (Q.string "qskill" |> Q.map (Maybe.withDefault ""))
+                        |> qapply (Q.string "aq" |> Q.map (Maybe.withDefault ""))
+                        |> qapply (Q.string "cq" |> Q.map (Maybe.withDefault ""))
+                        |> qapply (Q.string "sq" |> Q.map (Maybe.withDefault ""))
                         |> qapply (boolQueryParser "enableExp")
                     )
             )
@@ -111,12 +113,15 @@ homeQueryBuilder q =
         |> String.join ","
         |> Util.ifthenfn ((==) "") (always Nothing) Just
         |> Maybe.map (B.string "skill")
-    , q.searchName
+    , q.searchAccount
         |> Util.ifthenfn ((==) "") (always Nothing) Just
-        |> Maybe.map (B.string "qname")
+        |> Maybe.map (B.string "aq")
+    , q.searchChar
+        |> Util.ifthenfn ((==) "") (always Nothing) Just
+        |> Maybe.map (B.string "cq")
     , q.searchSkill
         |> Util.ifthenfn ((==) "") (always Nothing) Just
-        |> Maybe.map (B.string "qskill")
+        |> Maybe.map (B.string "sq")
     , q.enableExp |> boolQueryBuilder "enableExp"
     ]
         |> List.filterMap identity

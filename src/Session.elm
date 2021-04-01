@@ -151,8 +151,8 @@ toLeaderboard filter rawList =
                                     , Set.diff filter.skill entry.abilitySet |> Set.isEmpty
 
                                     -- charname+username search
-                                    , List.any (String.toLower >> String.contains (String.toLower filter.searchName))
-                                        [ entry.charName, entry.playerUsername ]
+                                    , String.contains (String.toLower filter.searchAccount) (String.toLower entry.playerUsername)
+                                    , String.contains (String.toLower filter.searchChar) (String.toLower entry.charName)
 
                                     -- skill-name search is below; it doesn't affect character entries, only skills
                                     ]

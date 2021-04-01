@@ -25,7 +25,8 @@ type alias Model =
 
 type Msg
     = SessionMsg Session.Msg
-    | InputSearchName String
+    | InputSearchAccount String
+    | InputSearchChar String
     | InputSearchSkill String
 
 
@@ -51,8 +52,11 @@ update msg ({ session, query } as model) =
         SessionMsg submsg ->
             ( { model | session = session |> Session.update submsg }, Cmd.none )
 
-        InputSearchName s ->
-            ( { model | query = { query | searchName = s } }, Cmd.none )
+        InputSearchAccount s ->
+            ( { model | query = { query | searchAccount = s } }, Cmd.none )
+
+        InputSearchChar s ->
+            ( { model | query = { query | searchChar = s } }, Cmd.none )
 
         InputSearchSkill s ->
             ( { model | query = { query | searchSkill = s } }, Cmd.none )
@@ -144,6 +148,7 @@ view model =
                             [ tr [] <|
                                 [ th [] []
                                 , th [] []
+                                , th [] [ text "Account" ]
                                 , th [] [ text "Character" ]
                                 , th [] [ text "Arena" ]
                                 , th [] [ text "Skills" ]
@@ -160,7 +165,8 @@ view model =
                             , tr [] <|
                                 [ th [] []
                                 , th [] []
-                                , th [] [ input [ value model.query.searchName, onInput InputSearchName ] [] ]
+                                , th [] [ input [ value model.query.searchAccount, onInput InputSearchAccount ] [] ]
+                                , th [] [ input [ value model.query.searchChar, onInput InputSearchChar ] [] ]
                                 ]
                             ]
                         , tbody [] (lb.rankedList |> List.map (viewEntry model.query))
@@ -275,10 +281,8 @@ viewEntry query ( index, row ) =
 
         -- , td [] [ text row.playerUsername ]
         , td [] (viewClassIcon row.charClass)
-        , td []
-            [ div [] [ text row.charName ]
-            , small [ class "username" ] [ text row.playerUsername ]
-            ]
+        , td [] [ text row.playerUsername ]
+        , td [] [ text row.charName ]
 
         -- , td [] (viewClass row.charClass)
         , td [ class "num" ] [ text <| Util.formatInt row.maxWave ]
