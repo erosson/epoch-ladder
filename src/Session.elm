@@ -199,7 +199,12 @@ toLeaderboard filter rawList =
             |> List.map .charClass
             |> popularity (Util.unwrapResult identity .name)
                 (Game.Subclass.list
-                    |> List.filter (\s -> filter.class == Nothing || filter.class == Just s.class.name)
+                    |> List.filter
+                        (\s ->
+                            (filter.class == Nothing)
+                                || (filter.class == Just s.class.name)
+                                || Set.member s.name filter.subclass
+                        )
                     |> List.map Ok
                 )
     , classes =
