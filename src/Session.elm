@@ -165,7 +165,9 @@ toLeaderboard filter rawList =
         abilities0 : List ( Ability, Int )
         abilities0 =
             filteredList
-                |> List.concatMap .abilities
+                -- if a char selects the same skill multiple times, don't double-count the skill.
+                -- prompted by seeing 104% of rogues using Shift
+                |> List.concatMap (.abilities >> List.Extra.uniqueBy .name)
                 |> List.filter (\a -> a.name /= "")
                 -- skill name search
                 |> List.filter (\a -> String.contains (String.toLower filter.searchSkill) (String.toLower a.name))
