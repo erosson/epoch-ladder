@@ -210,7 +210,7 @@ viewSubclassFilter query lb ( subclass, count ) =
             [ div [ class "label" ] [ text name ]
             , div [] (viewClassIcon subclass)
             , div [ class "pct" ] [ text <| Util.formatPercent <| toFloat count / toFloat lb.rawSize ]
-            , meter
+            , progress
                 [ A.value <| String.fromInt count
                 , A.max <| String.fromInt lb.rawSize
                 ]
@@ -257,7 +257,7 @@ viewAbilityFilter query lb ( ability, count ) =
                     [ text ability.name
                     , span [ class "percent" ] [ text percent ]
                     ]
-                , meter
+                , progress
                     [ A.max <| String.fromInt lb.size
                     , A.value <| String.fromInt count
                     , title percent
@@ -309,7 +309,7 @@ viewEntry query ( index, row ) =
                     , td []
                         (case expmeter of
                             Just ( bounds, exp ) ->
-                                [ meter
+                                [ progress
                                     [ class "exp"
                                     , A.max <| String.fromInt <| Basics.max 1 bounds.diff
                                     , A.value <| String.fromInt <| Maybe.Extra.unwrap bounds.diff .value exp
