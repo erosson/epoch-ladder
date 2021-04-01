@@ -128,6 +128,9 @@ progress.exp {
 .ladder-entry.dead {
   opacity: 0.5;
 }
+.ladder-entry td.abilities {
+  white-space: nowrap;
+}
 td.num {
   text-align: right;
 }

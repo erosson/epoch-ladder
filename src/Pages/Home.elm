@@ -286,7 +286,7 @@ viewEntry query ( index, row ) =
 
         -- , td [] (viewClass row.charClass)
         , td [ class "num" ] [ text <| Util.formatInt row.maxWave ]
-        , td [] (row.abilities |> List.map viewAbilityIcon)
+        , td [ class "abilities" ] (row.abilities |> List.map viewAbilityIcon)
         , td [ class "num" ] [ text <| Util.formatInt row.charLvl ]
         ]
             ++ (if query.enableExp then
