@@ -144,6 +144,7 @@ td.num {
   visibility: hidden;
   position: absolute;
   z-index: 1;
+  white-space: normal;
 
   top: 2em;
   left: 2em;

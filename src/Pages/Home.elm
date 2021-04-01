@@ -356,7 +356,7 @@ viewAbilityTooltip ability body =
         Just a ->
             span [ class "tooltip" ] <|
                 body
-                    ++ [ span [ class "tooltip-body" ]
+                    ++ [ div [ class "tooltip-body" ]
                             [ div [] [ b [] [ text ability.name ] ]
                             , p [ class "ability-cost" ]
                                 [ text "Skill cost: "
