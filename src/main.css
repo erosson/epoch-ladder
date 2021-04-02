@@ -125,9 +125,23 @@ progress {
 progress.exp {
   width: 5em;
 }
-.ladder-entry.dead {
+
+/*
+ * dead hardcore characters are grayed out, but their ability tooltips aren't.
+ * can't seem to make exceptions to opacity once it's applied to a parent
+ * element, so instead of applying it to the row, apply it to each thing in the
+ * row except the tooltip.
+ */
+.ladder-entry.dead td {
   opacity: 0.5;
 }
+.ladder-entry.dead td.abilities {
+  opacity: 1;
+}
+.ladder-entry.dead td.abilities img {
+  opacity: 0.5;
+}
+
 .ladder-entry td.abilities {
   white-space: nowrap;
 }
