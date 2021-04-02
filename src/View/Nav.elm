@@ -26,7 +26,7 @@ view q =
             |> ul []
         , viewParamList q.ssf
             (\v -> { q | ssf = v })
-            [ ( [ text "trade" ], False )
+            [ ( [ text "normal" ], False )
             , ( [ text "ssf" ], True )
             ]
             |> ul []
